@@ -128,29 +128,39 @@ export const Reviews = () => {
               </h2>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                {reviews.map((rev) => (
-                  <div key={rev.id} className="review-card" style={{ backgroundColor: '#FFFFFF', borderRadius: 'var(--radius-md)', padding: '1.75rem', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-xs)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-                      <div>
-                        <div style={{ fontWeight: 700, fontSize: '1.1rem' }}>{rev.guest_name}</div>
-                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                          {rev.city} • Stayed in {rev.room_type}
+                {reviews.length > 0 ? (
+                  reviews.map((rev) => (
+                    <div key={rev.id} className="review-card" style={{ backgroundColor: '#FFFFFF', borderRadius: 'var(--radius-md)', padding: '1.75rem', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-xs)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: '1.1rem' }}>{rev.guest_name}</div>
+                          <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                            {rev.city} • Stayed in {rev.room_type}
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', color: '#C58940' }}>
+                          {[...Array(5)].map((_, i) => (
+                            <Star key={i} size={16} fill={i < Math.floor(rev.rating) ? '#C58940' : 'none'} color="#C58940" />
+                          ))}
                         </div>
                       </div>
-                      <div style={{ display: 'flex', color: '#C58940' }}>
-                        {[...Array(5)].map((_, i) => (
-                          <Star key={i} size={16} fill={i < Math.floor(rev.rating) ? '#C58940' : 'none'} color="#C58940" />
-                        ))}
+                      <p style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', lineHeight: 1.6, fontStyle: 'italic', marginBottom: '0.75rem' }}>
+                        "{rev.comment}"
+                      </p>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                        Date: {rev.date}
                       </div>
                     </div>
-                    <p style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', lineHeight: 1.6, fontStyle: 'italic', marginBottom: '0.75rem' }}>
-                      "{rev.comment}"
+                  ))
+                ) : (
+                  <div style={{ padding: '3rem 1.5rem', textAlign: 'center', backgroundColor: '#FFFFFF', borderRadius: 'var(--radius-lg)', border: '1px dashed var(--border-light)', color: 'var(--text-muted)' }}>
+                    <Sparkles size={32} color="var(--gold)" style={{ margin: '0 auto 0.75rem', display: 'block' }} />
+                    <h3 style={{ fontSize: '1.2rem', color: 'var(--text-main)', marginBottom: '0.5rem' }}>No reviews yet</h3>
+                    <p style={{ fontSize: '0.9rem', maxWidth: '420px', margin: '0 auto' }}>
+                      Be the first devotee or visiting family to share your experience staying at Shree Yatri Nivas using the form.
                     </p>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                      Date: {rev.date}
-                    </div>
                   </div>
-                ))}
+                )}
               </div>
             </div>
 

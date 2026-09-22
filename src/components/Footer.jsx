@@ -49,7 +49,6 @@ export const Footer = () => {
               <li><Link to="/booking">Online Reservation</Link></li>
               <li><Link to="/reviews">Guest Testimonials</Link></li>
               <li><Link to="/contact">Directions & Contact</Link></li>
-              <li><Link to="/admin">Staff & Admin Login</Link></li>
             </ul>
           </div>
 

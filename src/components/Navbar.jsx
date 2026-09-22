@@ -65,13 +65,6 @@ export const Navbar = () => {
               Contact
             </NavLink>
           </li>
-          <li>
-            <NavLink to="/admin" className={({ isActive }) => `syn-nav-link ${isActive ? 'active' : ''}`} style={{ color: isAdminLoggedIn ? 'var(--primary)' : undefined }}>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                <ShieldAlert size={15} /> Admin
-              </span>
-            </NavLink>
-          </li>
         </ul>
 
         {/* Right Actions (Auth & CTA) */}
@@ -216,13 +209,6 @@ export const Navbar = () => {
             className={({ isActive }) => `syn-nav-link ${isActive ? 'active' : ''}`}
           >
             Contact & Location
-          </NavLink>
-          <NavLink
-            to="/admin"
-            onClick={handleNavClick}
-            className={({ isActive }) => `syn-nav-link ${isActive ? 'active' : ''}`}
-          >
-            Admin Management Portal
           </NavLink>
 
           <div style={{ paddingTop: '0.75rem', borderTop: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>

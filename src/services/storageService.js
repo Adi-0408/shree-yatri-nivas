@@ -37,28 +37,47 @@ const STORAGE_KEYS = {
   INQUIRIES: "syn_inquiries_v1",
   ADMIN_CONFIG: "syn_admin_config_v1",
   STAFF_MEMBERS: "syn_staff_members_v1",
-  CLEANSED_FLAG: "syn_demo_cleansed_v2"
+  CLEANSED_FLAG: "syn_demo_cleansed_v5"
 };
 
 export const StorageService = {
   firestoreInitialized: false,
 
+  isDemoRecord(item) {
+    if (!item) return false;
+    const name = String(item.guest_name || item.customer_name || item.name || "").toLowerCase();
+    const email = String(item.email || "").toLowerCase();
+    const ref = String(item.booking_reference || item.booking_id || item.id || "");
+    return (
+      name.includes("ramesh sharma") ||
+      name.includes("sunita deshmukh") ||
+      name.includes("ramesh") ||
+      name.includes("sunita") ||
+      email.includes("ramesh@") ||
+      email.includes("sunita@") ||
+      ref === "SYN-20260921-001" ||
+      ref === "SYN-20260920-002" ||
+      ref === "BK-101" ||
+      ref === "BK-102" ||
+      ref === "CUST-001" ||
+      ref === "CUST-002" ||
+      ref === "REV-101" ||
+      ref === "REV-102" ||
+      ref === "REV-103"
+    );
+  },
+
   init() {
     if (typeof window === "undefined") return;
 
-    // One-time automatic cleanup of all legacy demo accounts and demo bookings
+    // Automatic cleanup of all legacy demo accounts, mock bookings, and mock reviews
     if (!localStorage.getItem(STORAGE_KEYS.CLEANSED_FLAG)) {
       localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify([]));
 
       // Remove mock bookings
       try {
         const currentBookings = JSON.parse(localStorage.getItem(STORAGE_KEYS.BOOKINGS) || "[]");
-        const realBookings = currentBookings.filter(b => 
-          b.guest_name !== "Ramesh Sharma" && 
-          b.guest_name !== "Sunita Deshmukh" &&
-          b.booking_reference !== "SYN-20260921-001" &&
-          b.booking_reference !== "SYN-20260920-002"
-        );
+        const realBookings = currentBookings.filter(b => !this.isDemoRecord(b));
         localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(realBookings));
       } catch {
         localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify([]));
@@ -67,15 +86,15 @@ export const StorageService = {
       // Remove mock reviews
       try {
         const currentReviews = JSON.parse(localStorage.getItem(STORAGE_KEYS.REVIEWS) || "[]");
-        const realReviews = currentReviews.filter(r => !["REV-101", "REV-102", "REV-103"].includes(r.id));
+        const realReviews = currentReviews.filter(r => !this.isDemoRecord(r));
         localStorage.setItem(STORAGE_KEYS.REVIEWS, JSON.stringify(realReviews));
       } catch {
         localStorage.setItem(STORAGE_KEYS.REVIEWS, JSON.stringify([]));
       }
 
-      // Clear legacy demo customer session if Ramesh
+      // Clear legacy demo customer session if Ramesh or demo
       const currentCust = localStorage.getItem(STORAGE_KEYS.CURRENT_CUSTOMER);
-      if (currentCust && (currentCust.includes("ramesh@example.com") || currentCust.includes("Ramesh"))) {
+      if (currentCust && (currentCust.includes("ramesh") || currentCust.includes("sunita") || currentCust.includes("Ramesh"))) {
         localStorage.removeItem(STORAGE_KEYS.CURRENT_CUSTOMER);
       }
       localStorage.setItem(STORAGE_KEYS.CLEANSED_FLAG, "true");
@@ -158,18 +177,17 @@ export const StorageService = {
       onSnapshot(bookingsRef, (snapshot) => {
         if (!snapshot.empty) {
           const cloudBookings = [];
-          snapshot.forEach(d => cloudBookings.push({ ...d.data(), booking_id: d.id }));
+          snapshot.forEach(d => {
+            const data = { ...d.data(), booking_id: d.id };
+            if (this.isDemoRecord(data)) {
+              deleteDoc(doc(db, "bookings", d.id)).catch(() => {});
+            } else {
+              cloudBookings.push(data);
+            }
+          });
           cloudBookings.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
           localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(cloudBookings));
           window.dispatchEvent(new CustomEvent("syn_bookings_updated", { detail: cloudBookings }));
-        } else {
-          // Auto-seed initial bookings
-          const localBookings = this.getBookings();
-          localBookings.forEach(b => {
-            setDoc(doc(db, "bookings", b.booking_id), cleanForFirestore(b)).catch(err => {
-              console.warn("Firestore booking auto-seed:", err.message);
-            });
-          });
         }
       }, (err) => {
         console.warn("Firestore bookings listener:", err.message);
@@ -180,16 +198,16 @@ export const StorageService = {
       onSnapshot(reviewsRef, (snapshot) => {
         if (!snapshot.empty) {
           const cloudReviews = [];
-          snapshot.forEach(d => cloudReviews.push({ ...d.data(), id: d.id }));
+          snapshot.forEach(d => {
+            const data = { ...d.data(), id: d.id };
+            if (this.isDemoRecord(data)) {
+              deleteDoc(doc(db, "reviews", String(d.id))).catch(() => {});
+            } else {
+              cloudReviews.push(data);
+            }
+          });
           localStorage.setItem(STORAGE_KEYS.REVIEWS, JSON.stringify(cloudReviews));
           window.dispatchEvent(new CustomEvent("syn_reviews_updated", { detail: cloudReviews }));
-        } else {
-          const localReviews = this.getReviews(true);
-          localReviews.forEach(r => {
-            setDoc(doc(db, "reviews", String(r.id)), cleanForFirestore(r)).catch(err => {
-              console.warn("Firestore review auto-seed:", err.message);
-            });
-          });
         }
       }, (err) => {
         console.warn("Firestore reviews listener:", err.message);
@@ -414,9 +432,10 @@ export const StorageService = {
   getBookings() {
     this.init();
     try {
-      return JSON.parse(localStorage.getItem(STORAGE_KEYS.BOOKINGS) || "[]");
+      const items = JSON.parse(localStorage.getItem(STORAGE_KEYS.BOOKINGS) || "[]");
+      return items.filter(b => !this.isDemoRecord(b));
     } catch {
-      return DEFAULT_BOOKINGS;
+      return [];
     }
   },
 
@@ -531,9 +550,10 @@ export const StorageService = {
     this.init();
     try {
       const reviews = JSON.parse(localStorage.getItem(STORAGE_KEYS.REVIEWS) || "[]");
-      return includePending ? reviews : reviews.filter(r => r.status === "approved");
+      const filtered = reviews.filter(r => !this.isDemoRecord(r));
+      return includePending ? filtered : filtered.filter(r => r.status === "approved");
     } catch {
-      return DEFAULT_REVIEWS;
+      return [];
     }
   },
 
@@ -768,9 +788,10 @@ export const StorageService = {
   getCustomers() {
     this.init();
     try {
-      return JSON.parse(localStorage.getItem(STORAGE_KEYS.CUSTOMERS) || "[]");
+      const customers = JSON.parse(localStorage.getItem(STORAGE_KEYS.CUSTOMERS) || "[]");
+      return customers.filter(c => !this.isDemoRecord(c));
     } catch {
-      return DEFAULT_CUSTOMERS;
+      return [];
     }
   },
 
