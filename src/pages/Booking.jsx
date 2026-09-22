@@ -129,14 +129,6 @@ export const Booking = () => {
     return () => window.removeEventListener('syn_pricing_updated', handlePricingSync);
   }, [searchParams]);
 
-  // Ensure roomQty is within current selected room inventory
-  useEffect(() => {
-    const maxRooms = selectedRoom?.total_quantity || availability.totalQty || 1;
-    if (roomQty > maxRooms) {
-      setRoomQty(Math.max(1, maxRooms));
-    }
-  }, [selectedRoom, availability.totalQty, roomQty]);
-
   // Autofill customer data if logged in
   useEffect(() => {
     if (customer) {
@@ -193,6 +185,14 @@ export const Booking = () => {
     if (!selectedRoomId || !checkIn || !checkOut) return { available: true, remainingQty: 1, totalQty: 1 };
     return StorageService.checkRoomAvailability(selectedRoomId, checkIn, checkOut, roomQty);
   }, [selectedRoomId, checkIn, checkOut, roomQty]);
+
+  // Ensure roomQty is within current selected room inventory
+  useEffect(() => {
+    const maxRooms = selectedRoom?.total_quantity || availability.totalQty || 1;
+    if (roomQty > maxRooms) {
+      setRoomQty(Math.max(1, maxRooms));
+    }
+  }, [selectedRoom?.total_quantity, availability.totalQty, roomQty]);
 
   // Step 1 -> Step 2 validation
   const handleProceedToStep2 = (e) => {
@@ -264,9 +264,9 @@ export const Booking = () => {
         included_guests: priceBreakdown.includedGuests,
         extra_guests: priceBreakdown.extraGuests,
         extra_person_rate: priceBreakdown.extraPersonRate,
-        room_id: selectedRoom.room_id,
-        room_name: selectedRoom.room_name,
-        room_type: selectedRoom.room_type,
+        room_id: selectedRoom?.room_id || selectedRoomId,
+        room_name: selectedRoom?.room_name || 'Accommodations',
+        room_type: selectedRoom?.room_type || 'AC Room',
         room_quantity: parseInt(roomQty, 10),
         room_rate: priceBreakdown.baseRate,
         number_of_nights: priceBreakdown.numberOfNights,
@@ -667,7 +667,7 @@ export const Booking = () => {
                     {/* Line 1: Room Base Charge */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem', fontSize: '0.9rem' }}>
                       <div>
-                        <strong style={{ color: 'var(--text-main)' }}>Room Base Tariff:</strong> {selectedRoom.room_name}
+                        <strong style={{ color: 'var(--text-main)' }}>Room Base Tariff:</strong> {selectedRoom?.room_name || 'Room'}
                         <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px' }}>
                           ₹{priceBreakdown.baseRate} × {priceBreakdown.roomQty} room × {priceBreakdown.numberOfNights} night{priceBreakdown.numberOfNights > 1 ? 's' : ''} (Includes up to {priceBreakdown.includedGuests} guests)
                         </div>
