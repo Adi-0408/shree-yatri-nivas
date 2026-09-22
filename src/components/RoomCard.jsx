@@ -6,7 +6,7 @@ export const RoomCard = ({ room, onOpenDetails }) => {
   const navigate = useNavigate();
 
   const handleBookNow = () => {
-    navigate(`/booking?roomId=${room.room_id}`);
+    navigate(`/booking?roomId=${room.room_id}`, { viewTransition: true });
   };
 
   const defaultImg = "https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1200&q=80";

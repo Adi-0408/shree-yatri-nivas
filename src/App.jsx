@@ -5,6 +5,7 @@ import { Footer } from './components/Footer';
 import { FloatingWhatsApp } from './components/FloatingWhatsApp';
 import { AuthModal } from './components/AuthModal';
 import { ScrollToTop } from './components/ScrollToTop';
+import { PageTransition } from './components/PageTransition';
 
 import { Home } from './pages/Home';
 import { Rooms } from './pages/Rooms';
@@ -19,22 +20,24 @@ export const App = () => {
     <>
       <ScrollToTop />
       <Navbar />
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/rooms" element={<Rooms />} />
-        <Route path="/rooms.html" element={<Rooms />} />
-        <Route path="/booking" element={<Booking />} />
-        <Route path="/booking.html" element={<Booking />} />
-        <Route path="/reviews" element={<Reviews />} />
-        <Route path="/reviews.html" element={<Reviews />} />
-        <Route path="/contact" element={<Contact />} />
-        <Route path="/contact.html" element={<Contact />} />
-        <Route path="/admin" element={<Admin />} />
-        <Route path="/admin/pricing" element={<Admin initialTab="pricing" />} />
-        <Route path="/admin/:tab" element={<Admin />} />
-        <Route path="/admin.html" element={<Admin />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
+      <PageTransition>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/rooms" element={<Rooms />} />
+          <Route path="/rooms.html" element={<Rooms />} />
+          <Route path="/booking" element={<Booking />} />
+          <Route path="/booking.html" element={<Booking />} />
+          <Route path="/reviews" element={<Reviews />} />
+          <Route path="/reviews.html" element={<Reviews />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/contact.html" element={<Contact />} />
+          <Route path="/admin" element={<Admin />} />
+          <Route path="/admin/pricing" element={<Admin initialTab="pricing" />} />
+          <Route path="/admin/:tab" element={<Admin />} />
+          <Route path="/admin.html" element={<Admin />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </PageTransition>
       <Footer />
       <FloatingWhatsApp />
       <AuthModal />

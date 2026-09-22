@@ -53,7 +53,7 @@ export const Home = () => {
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
-    navigate(`/rooms?checkIn=${checkIn}&checkOut=${checkOut}&guests=${guests}&ac=${acPref}`);
+    navigate(`/rooms?checkIn=${checkIn}&checkOut=${checkOut}&guests=${guests}&ac=${acPref}`, { viewTransition: true });
   };
 
   return (

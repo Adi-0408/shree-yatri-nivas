@@ -44,11 +44,11 @@ export const Footer = () => {
           <div>
             <h3 className="footer-title">Quick Links</h3>
             <ul className="footer-links">
-              <li><Link to="/">Home Overview</Link></li>
-              <li><Link to="/rooms">Rooms & Tariffs</Link></li>
-              <li><Link to="/booking">Online Reservation</Link></li>
-              <li><Link to="/reviews">Guest Testimonials</Link></li>
-              <li><Link to="/contact">Directions & Contact</Link></li>
+              <li><Link to="/" viewTransition>Home Overview</Link></li>
+              <li><Link to="/rooms" viewTransition>Rooms & Tariffs</Link></li>
+              <li><Link to="/booking" viewTransition>Online Reservation</Link></li>
+              <li><Link to="/reviews" viewTransition>Guest Testimonials</Link></li>
+              <li><Link to="/contact" viewTransition>Directions & Contact</Link></li>
             </ul>
           </div>
 

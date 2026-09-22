@@ -28,7 +28,7 @@ export const Navbar = () => {
     <nav className="syn-navbar" role="navigation" aria-label="Main Navigation">
       <div className="syn-container syn-navbar-inner">
         {/* Brand */}
-        <Link to="/" className="syn-brand" onClick={handleNavClick}>
+        <Link to="/" viewTransition className="syn-brand" onClick={handleNavClick}>
           <div className="syn-brand-icon">
             <Building size={24} />
           </div>
@@ -41,27 +41,27 @@ export const Navbar = () => {
         {/* Desktop Navigation Links */}
         <ul className="syn-nav-links">
           <li>
-            <NavLink to="/" className={({ isActive }) => `syn-nav-link ${isActive ? 'active' : ''}`} end>
+            <NavLink to="/" viewTransition className={({ isActive }) => `syn-nav-link ${isActive ? 'active' : ''}`} end>
               Home
             </NavLink>
           </li>
           <li>
-            <NavLink to="/rooms" className={({ isActive }) => `syn-nav-link ${isActive ? 'active' : ''}`}>
+            <NavLink to="/rooms" viewTransition className={({ isActive }) => `syn-nav-link ${isActive ? 'active' : ''}`}>
               Rooms & Rates
             </NavLink>
           </li>
           <li>
-            <NavLink to="/booking" className={({ isActive }) => `syn-nav-link ${isActive ? 'active' : ''}`}>
+            <NavLink to="/booking" viewTransition className={({ isActive }) => `syn-nav-link ${isActive ? 'active' : ''}`}>
               Book Now
             </NavLink>
           </li>
           <li>
-            <NavLink to="/reviews" className={({ isActive }) => `syn-nav-link ${isActive ? 'active' : ''}`}>
+            <NavLink to="/reviews" viewTransition className={({ isActive }) => `syn-nav-link ${isActive ? 'active' : ''}`}>
               Reviews
             </NavLink>
           </li>
           <li>
-            <NavLink to="/contact" className={({ isActive }) => `syn-nav-link ${isActive ? 'active' : ''}`}>
+            <NavLink to="/contact" viewTransition className={({ isActive }) => `syn-nav-link ${isActive ? 'active' : ''}`}>
               Contact
             </NavLink>
           </li>
@@ -100,7 +100,7 @@ export const Navbar = () => {
                       <button
                         onClick={() => {
                           setDropdownOpen(false);
-                          navigate('/admin');
+                          navigate('/admin', { viewTransition: true });
                         }}
                         className="syn-dropdown-item"
                         style={{ color: 'var(--primary)', fontWeight: 600 }}
@@ -112,7 +112,7 @@ export const Navbar = () => {
                     <button
                       onClick={() => {
                         setDropdownOpen(false);
-                        navigate('/booking');
+                        navigate('/booking', { viewTransition: true });
                       }}
                       className="syn-dropdown-item"
                     >
@@ -144,7 +144,7 @@ export const Navbar = () => {
             </button>
           )}
 
-          <Link to="/booking" className="btn btn-primary btn-sm syn-reserve-cta">
+          <Link to="/booking" viewTransition className="btn btn-primary btn-sm syn-reserve-cta">
             <Sparkles size={16} />
             <span>Instant Reserve</span>
           </Link>
@@ -176,6 +176,7 @@ export const Navbar = () => {
         >
           <NavLink
             to="/"
+            viewTransition
             onClick={handleNavClick}
             className={({ isActive }) => `syn-nav-link ${isActive ? 'active' : ''}`}
             end
@@ -184,6 +185,7 @@ export const Navbar = () => {
           </NavLink>
           <NavLink
             to="/rooms"
+            viewTransition
             onClick={handleNavClick}
             className={({ isActive }) => `syn-nav-link ${isActive ? 'active' : ''}`}
           >
@@ -191,6 +193,7 @@ export const Navbar = () => {
           </NavLink>
           <NavLink
             to="/booking"
+            viewTransition
             onClick={handleNavClick}
             className={({ isActive }) => `syn-nav-link ${isActive ? 'active' : ''}`}
           >
@@ -198,6 +201,7 @@ export const Navbar = () => {
           </NavLink>
           <NavLink
             to="/reviews"
+            viewTransition
             onClick={handleNavClick}
             className={({ isActive }) => `syn-nav-link ${isActive ? 'active' : ''}`}
           >
@@ -205,6 +209,7 @@ export const Navbar = () => {
           </NavLink>
           <NavLink
             to="/contact"
+            viewTransition
             onClick={handleNavClick}
             className={({ isActive }) => `syn-nav-link ${isActive ? 'active' : ''}`}
           >
@@ -223,7 +228,7 @@ export const Navbar = () => {
                 <User size={16} /> Devotee Login / Register
               </button>
             )}
-            <Link to="/booking" onClick={handleNavClick} className="btn btn-primary">
+            <Link to="/booking" viewTransition onClick={handleNavClick} className="btn btn-primary">
               <Sparkles size={16} /> Reserve Room Online
             </Link>
           </div>

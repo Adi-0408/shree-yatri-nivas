@@ -26,7 +26,7 @@ export const RoomDetailsModal = ({ room, onClose }) => {
 
   const handleBookNow = () => {
     onClose();
-    navigate(`/booking?roomId=${room.room_id}`);
+    navigate(`/booking?roomId=${room.room_id}`, { viewTransition: true });
   };
 
   const nextImg = () => {

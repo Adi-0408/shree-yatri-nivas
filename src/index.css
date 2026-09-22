@@ -1766,6 +1766,107 @@ select option:checked {
 }
 
 /* ==========================================================================
+   Page Transitions & Route Motion (View Transitions API & CSS Animations)
+   ========================================================================== */
+
+/* Modern Native View Transitions API */
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-group(root) {
+  animation-duration: 0.32s;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+::view-transition-old(root) {
+  animation: 0.18s cubic-bezier(0.4, 0, 1, 1) both synPageFadeOut;
+}
+
+::view-transition-new(root) {
+  animation: 0.28s cubic-bezier(0.16, 1, 0.3, 1) both synPageFadeIn;
+}
+
+@keyframes synPageFadeOut {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.995);
+  }
+}
+
+@keyframes synPageFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Fallback & Enhanced Page Transition Container */
+.syn-page-transition {
+  animation: synPageEnter 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: opacity, transform;
+}
+
+@keyframes synPageEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Route Navigation Top Shimmer Progress Indicator */
+.syn-route-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--gold), #E5BA73, var(--primary), var(--gold));
+  background-size: 200% 100%;
+  z-index: 9999;
+  pointer-events: none;
+  animation: synProgressShimmer 0.5s linear infinite, synProgressFill 0.4s ease-out forwards;
+}
+
+@keyframes synProgressShimmer {
+  0% { background-position: 100% 0%; }
+  100% { background-position: -100% 0%; }
+}
+
+@keyframes synProgressFill {
+  0% { transform: scaleX(0); transform-origin: left; opacity: 1; }
+  60% { transform: scaleX(0.8); transform-origin: left; opacity: 1; }
+  100% { transform: scaleX(1); transform-origin: left; opacity: 0; }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+  .syn-page-transition {
+    animation: none !important;
+  }
+  .syn-route-progress {
+    display: none !important;
+  }
+}
+
+/* ==========================================================================
    Print Stylesheet
    ========================================================================== */
 @media print {
