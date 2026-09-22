@@ -1,5 +1,5 @@
 // SHREE YATRI NIVAS - Default Seed Data
-const DEFAULT_ROOMS = [
+export const DEFAULT_ROOMS = [
   {
     room_id: "SYN-RM-101",
     room_name: "Deluxe AC Family Suite",
@@ -13,7 +13,7 @@ const DEFAULT_ROOMS = [
     badge: "Most Popular",
     rating: 4.9,
     reviews_count: 38,
-    description: "Spacious luxury suite crafted for families and groups visiting the holy pilgrimage. Features 2 king-sized beds, modern air conditioning, premium wooden furnishing, ambient warm lighting, and a panoramic city/temple view.",
+    description: "Spacious luxury suite crafted for families and groups visiting the holy pilgrimage. Features 2 king-sized beds, modern air conditioning, premium wooden furnishing, ambient warm lighting, and a panoramic temple and river view.",
     amenities: ["Air Conditioning", "Free High-Speed Wi-Fi", "Hot Water Geyser (24/7)", "LED Smart TV", "Room Service", "Daily Housekeeping", "Complimentary Water", "Electric Kettle & Tea Kit"],
     images: [
       "https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1200&q=80",
@@ -104,7 +104,7 @@ const DEFAULT_ROOMS = [
   }
 ];
 
-const DEFAULT_BOOKINGS = [
+export const DEFAULT_BOOKINGS = [
   {
     booking_id: "SYN-20260921-001",
     booking_reference: "SYN-20260921-001",
@@ -153,7 +153,7 @@ const DEFAULT_BOOKINGS = [
   }
 ];
 
-const DEFAULT_REVIEWS = [
+export const DEFAULT_REVIEWS = [
   {
     id: "REV-101",
     guest_name: "Rajesh Kulkarni",
@@ -186,7 +186,7 @@ const DEFAULT_REVIEWS = [
   }
 ];
 
-const PROPERTY_INFO = {
+export const PROPERTY_INFO = {
   name: "SHREE YATRI NIVAS",
   tagline: "Divine Comfort, Peaceful Lodging & Authentic Hospitality",
   address: "Station Road, Near Central Temple Gate, Pandharpur, Maharashtra - 413304",
@@ -205,7 +205,7 @@ const PROPERTY_INFO = {
   }
 };
 
-const DEFAULT_CUSTOMERS = [
+export const DEFAULT_CUSTOMERS = [
   {
     id: "CUST-101",
     name: "Ramesh Sharma",
@@ -216,4 +216,3 @@ const DEFAULT_CUSTOMERS = [
     created_at: "2026-09-20T10:00:00Z"
   }
 ];
-

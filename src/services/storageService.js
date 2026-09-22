@@ -1,3 +1,5 @@
+import { DEFAULT_ROOMS, DEFAULT_BOOKINGS, DEFAULT_REVIEWS, DEFAULT_CUSTOMERS } from './seedData';
+
 const STORAGE_KEYS = {
   ROOMS: "syn_rooms_v1",
   BOOKINGS: "syn_bookings_v1",
@@ -7,8 +9,9 @@ const STORAGE_KEYS = {
   CURRENT_CUSTOMER: "syn_current_customer_v1"
 };
 
-const StorageService = {
+export const StorageService = {
   init() {
+    if (typeof window === "undefined") return;
     if (!localStorage.getItem(STORAGE_KEYS.ROOMS)) {
       localStorage.setItem(STORAGE_KEYS.ROOMS, JSON.stringify(DEFAULT_ROOMS));
     }
@@ -26,8 +29,12 @@ const StorageService = {
   // Rooms CRUD
   getRooms(includeInactive = false) {
     this.init();
-    const rooms = JSON.parse(localStorage.getItem(STORAGE_KEYS.ROOMS) || "[]");
-    return includeInactive ? rooms : rooms.filter(r => r.status === "active");
+    try {
+      const rooms = JSON.parse(localStorage.getItem(STORAGE_KEYS.ROOMS) || "[]");
+      return includeInactive ? rooms : rooms.filter(r => r.status === "active");
+    } catch {
+      return DEFAULT_ROOMS;
+    }
   },
 
   getRoomById(id) {
@@ -56,7 +63,7 @@ const StorageService = {
         images: ["https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1200&q=80"],
         ...roomData,
         room_id: newId,
-        available_quantity: roomData.total_quantity || 5,
+        available_quantity: parseInt(roomData.total_quantity, 10) || 5,
         created_at: new Date().toISOString()
       });
     }
@@ -89,7 +96,6 @@ const StorageService = {
     }
 
     const bookings = this.getBookings();
-    // Overlapping condition: booking.check_in < requested.check_out && booking.check_out > requested.check_in
     let bookedRoomsCount = 0;
     bookings.forEach(b => {
       if (b.room_id === roomId && b.booking_status !== "Cancelled") {
@@ -113,7 +119,11 @@ const StorageService = {
   // Bookings CRUD
   getBookings() {
     this.init();
-    return JSON.parse(localStorage.getItem(STORAGE_KEYS.BOOKINGS) || "[]");
+    try {
+      return JSON.parse(localStorage.getItem(STORAGE_KEYS.BOOKINGS) || "[]");
+    } catch {
+      return DEFAULT_BOOKINGS;
+    }
   },
 
   getBookingById(id) {
@@ -148,8 +158,8 @@ const StorageService = {
       ...bookingData,
       booking_id: ref,
       booking_reference: ref,
-      payment_method: "Pay at Property",
-      payment_status: "Pending",
+      payment_method: bookingData.payment_method || "Pay at Property",
+      payment_status: bookingData.payment_status || "Pending",
       booking_status: "Confirmed",
       created_at: new Date().toISOString()
     };
@@ -187,8 +197,12 @@ const StorageService = {
   // Reviews CRUD
   getReviews(includePending = false) {
     this.init();
-    const reviews = JSON.parse(localStorage.getItem(STORAGE_KEYS.REVIEWS) || "[]");
-    return includePending ? reviews : reviews.filter(r => r.status === "approved");
+    try {
+      const reviews = JSON.parse(localStorage.getItem(STORAGE_KEYS.REVIEWS) || "[]");
+      return includePending ? reviews : reviews.filter(r => r.status === "approved");
+    } catch {
+      return DEFAULT_REVIEWS;
+    }
   },
 
   addReview(reviewData) {
@@ -242,10 +256,14 @@ const StorageService = {
     localStorage.removeItem(STORAGE_KEYS.ADMIN_LOGGED_IN);
   },
 
-  // Customer Authentication (Login & Register)
+  // Customer Authentication
   getCustomers() {
     this.init();
-    return JSON.parse(localStorage.getItem(STORAGE_KEYS.CUSTOMERS) || "[]");
+    try {
+      return JSON.parse(localStorage.getItem(STORAGE_KEYS.CUSTOMERS) || "[]");
+    } catch {
+      return DEFAULT_CUSTOMERS;
+    }
   },
 
   getCurrentCustomer() {
@@ -288,7 +306,7 @@ const StorageService = {
       localStorage.setItem(STORAGE_KEYS.CURRENT_CUSTOMER, JSON.stringify(sessionData));
       return { success: true, customer: sessionData };
     }
-    return { success: false, message: "Invalid email/mobile or password. Please check your credentials or register." };
+    return { success: false, message: "Invalid email/mobile or password. Please check credentials or register." };
   },
 
   customerRegister(data) {
@@ -341,13 +359,13 @@ const StorageService = {
     localStorage.removeItem(STORAGE_KEYS.CURRENT_CUSTOMER);
   },
 
-  // Statistics calculation for Admin Dashboard
+  // Admin Dashboard Statistics
   getDashboardStats() {
     const rooms = this.getRooms(true);
     const bookings = this.getBookings();
     const reviews = this.getReviews(true);
 
-    const totalRooms = rooms.reduce((acc, r) => acc + (parseInt(r.total_quantity) || 1), 0);
+    const totalRooms = rooms.reduce((acc, r) => acc + (parseInt(r.total_quantity, 10) || 1), 0);
     const totalBookings = bookings.length;
 
     const todayStr = new Date().toISOString().split("T")[0];
@@ -375,8 +393,13 @@ const StorageService = {
       pendingPayments,
       pendingReviewsCount
     };
+  },
+
+  resetToDefaults() {
+    localStorage.setItem(STORAGE_KEYS.ROOMS, JSON.stringify(DEFAULT_ROOMS));
+    localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(DEFAULT_BOOKINGS));
+    localStorage.setItem(STORAGE_KEYS.REVIEWS, JSON.stringify(DEFAULT_REVIEWS));
+    localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(DEFAULT_CUSTOMERS));
+    return true;
   }
 };
-
-// Initialize immediately
-StorageService.init();
