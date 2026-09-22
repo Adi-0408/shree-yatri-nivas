@@ -93,9 +93,29 @@ export const Navbar = () => {
                 <div className="syn-dropdown-menu">
                   <div className="syn-dropdown-header">
                     <div className="syn-dropdown-name">{customer?.name || 'Devotee'}</div>
-                    <div className="syn-dropdown-sub">{customer?.mobile || ''}</div>
+                    <div className="syn-dropdown-sub">{customer?.email || customer?.mobile || ''}</div>
+                    {(customer?.role === 'admin' || customer?.role === 'staff' || isAdminLoggedIn) && (
+                      <div style={{ marginTop: '4px' }}>
+                        <span className={`badge ${customer?.role === 'staff' ? 'badge-warning' : 'badge-primary'}`} style={{ fontSize: '0.7rem' }}>
+                          {customer?.role === 'staff' ? 'Staff Member' : 'Administrator'}
+                        </span>
+                      </div>
+                    )}
                   </div>
                   <div className="syn-dropdown-body">
+                    {(customer?.role === 'admin' || customer?.role === 'staff' || isAdminLoggedIn) && (
+                      <button
+                        onClick={() => {
+                          setDropdownOpen(false);
+                          navigate('/admin');
+                        }}
+                        className="syn-dropdown-item"
+                        style={{ color: 'var(--primary)', fontWeight: 600 }}
+                      >
+                        <ShieldAlert size={16} color="var(--primary)" />
+                        <span>Admin Dashboard</span>
+                      </button>
+                    )}
                     <button
                       onClick={() => {
                         setDropdownOpen(false);

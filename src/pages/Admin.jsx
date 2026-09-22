@@ -6,8 +6,10 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { 
   ShieldAlert, 
+  ShieldCheck,
   Lock, 
   User, 
+  UserPlus,
   LayoutDashboard, 
   CalendarCheck, 
   BedDouble, 
@@ -34,11 +36,25 @@ import {
   Calendar,
   CalendarRange,
   Cloud,
-  RefreshCw
+  RefreshCw,
+  Eye,
+  EyeOff,
+  Key
 } from 'lucide-react';
 
 export const Admin = ({ initialTab }) => {
-  const { customer, isAdminLoggedIn, loginAdmin, logoutAdmin, logoutCustomer } = useAuth();
+  const { 
+    customer, 
+    isAdminLoggedIn, 
+    loginCustomer, 
+    loginAdmin, 
+    logoutAdmin, 
+    logoutCustomer, 
+    openAuthModal, 
+    updateAdminCredentials, 
+    createStaff, 
+    deleteStaff 
+  } = useAuth();
   const { showSuccess, showError, showInfo } = useToast();
   const location = useLocation();
   const params = useParams();
@@ -47,7 +63,7 @@ export const Admin = ({ initialTab }) => {
   const [adminUser, setAdminUser] = useState('');
   const [adminPass, setAdminPass] = useState('');
 
-  // Active Tab: 'dashboard' | 'bookings' | 'rooms' | 'pricing' | 'reviews' | 'customers'
+  // Active Tab: 'dashboard' | 'bookings' | 'rooms' | 'pricing' | 'reviews' | 'customers' | 'staff'
   const isPricingPath = location.pathname.includes('/pricing') || initialTab === 'pricing';
   const defaultTab = isPricingPath ? 'pricing' : (params.tab || initialTab || 'dashboard');
   const [activeTab, setActiveTab] = useState(defaultTab);
@@ -72,6 +88,26 @@ export const Admin = ({ initialTab }) => {
   const [pricingConfig, setPricingConfig] = useState(StorageService.getPricingConfig());
   const [pricingForm, setPricingForm] = useState(StorageService.getPricingConfig());
   const [isSavingPricing, setIsSavingPricing] = useState(false);
+
+  // Staff & Administrator Credentials State
+  const [adminConfig, setAdminConfig] = useState(StorageService.getAdminConfig());
+  const [staffList, setStaffList] = useState(StorageService.getStaffList());
+  const [adminEmailForm, setAdminEmailForm] = useState({
+    name: StorageService.getAdminConfig().name || 'Front Desk Administrator',
+    email: StorageService.getAdminConfig().email || 'admin@gmail.com',
+    password: StorageService.getAdminConfig().password || '1234'
+  });
+  const [showAdminPass, setShowAdminPass] = useState(false);
+  const [isUpdatingAdmin, setIsUpdatingAdmin] = useState(false);
+
+  const [newStaffForm, setNewStaffForm] = useState({
+    name: '',
+    email: '',
+    password: '',
+    role: 'staff'
+  });
+  const [showNewStaffPass, setShowNewStaffPass] = useState(false);
+  const [isCreatingStaff, setIsCreatingStaff] = useState(false);
 
   // Search & Filter state
   const [bookingSearch, setBookingSearch] = useState('');
@@ -101,6 +137,14 @@ export const Admin = ({ initialTab }) => {
     const pConfig = StorageService.getPricingConfig();
     setPricingConfig(pConfig);
     setPricingForm(pConfig);
+    const aConfig = StorageService.getAdminConfig();
+    setAdminConfig(aConfig);
+    setAdminEmailForm({
+      name: aConfig.name || 'Front Desk Administrator',
+      email: aConfig.email || 'admin@gmail.com',
+      password: aConfig.password || '1234'
+    });
+    setStaffList(StorageService.getStaffList());
   };
 
   const [syncingCloud, setSyncingCloud] = useState(false);
@@ -129,11 +173,15 @@ export const Admin = ({ initialTab }) => {
     window.addEventListener('syn_rooms_updated', handleSync);
     window.addEventListener('syn_bookings_updated', handleSync);
     window.addEventListener('syn_reviews_updated', handleSync);
+    window.addEventListener('syn_staff_updated', handleSync);
+    window.addEventListener('syn_admin_config_updated', handleSync);
     return () => {
       window.removeEventListener('syn_pricing_updated', handleSync);
       window.removeEventListener('syn_rooms_updated', handleSync);
       window.removeEventListener('syn_bookings_updated', handleSync);
       window.removeEventListener('syn_reviews_updated', handleSync);
+      window.removeEventListener('syn_staff_updated', handleSync);
+      window.removeEventListener('syn_admin_config_updated', handleSync);
     };
   }, [isAdminLoggedIn]);
 
@@ -243,15 +291,73 @@ export const Admin = ({ initialTab }) => {
     }
   }, [isAdminLoggedIn]);
 
-  const handleAdminLoginSubmit = (e) => {
+  const handleAdminLoginSubmit = async (e) => {
     e.preventDefault();
-    loginAdmin(adminUser, adminPass);
+    const res = await loginCustomer(adminUser, adminPass);
+    if (res && res.success) {
+      reloadData();
+    }
   };
 
-  const handleQuickDemoLogin = () => {
-    setAdminUser('admin');
-    setAdminPass('admin123');
-    loginAdmin('admin', 'admin123');
+  // Staff & Admin Credentials Handlers
+  const handleUpdateAdminProfile = (e) => {
+    e.preventDefault();
+    if (!adminEmailForm.email || !adminEmailForm.password) {
+      showError('Please provide both administrator email and password.');
+      return;
+    }
+    setIsUpdatingAdmin(true);
+    try {
+      const res = updateAdminCredentials({
+        name: adminEmailForm.name,
+        email: adminEmailForm.email,
+        password: adminEmailForm.password
+      });
+      if (res && res.success) {
+        setAdminConfig(res.config);
+      }
+    } catch (err) {
+      showError(err.message || 'Failed to update admin credentials.');
+    } finally {
+      setIsUpdatingAdmin(false);
+    }
+  };
+
+  const handleCreateStaff = (e) => {
+    e.preventDefault();
+    if (!newStaffForm.name || !newStaffForm.email || !newStaffForm.password) {
+      showError('Please provide staff name, email, and password.');
+      return;
+    }
+    setIsCreatingStaff(true);
+    try {
+      const res = createStaff({
+        name: newStaffForm.name,
+        email: newStaffForm.email,
+        password: newStaffForm.password,
+        role: newStaffForm.role
+      });
+      if (res && res.success) {
+        setNewStaffForm({
+          name: '',
+          email: '',
+          password: '',
+          role: 'staff'
+        });
+        setStaffList(StorageService.getStaffList());
+      }
+    } catch (err) {
+      showError(err.message || 'Failed to create staff account.');
+    } finally {
+      setIsCreatingStaff(false);
+    }
+  };
+
+  const handleDeleteStaffMember = (id, name) => {
+    if (window.confirm(`Are you sure you want to revoke access and delete staff account for ${name}?`)) {
+      deleteStaff(id);
+      setStaffList(StorageService.getStaffList());
+    }
   };
 
   // Booking updates
@@ -366,65 +472,45 @@ export const Admin = ({ initialTab }) => {
     });
   }, [bookings, bookingStatusFilter, bookingSearch]);
 
-  // AUTH GUARD: 403 Forbidden for logged-in standard customer (role: 'user')
-  if (customer && !isAdminLoggedIn) {
-    return (
-      <div className="syn-main-content" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '80vh', padding: '2rem 1rem' }}>
-        <div style={{ backgroundColor: '#FFFFFF', borderRadius: 'var(--radius-xl)', padding: '2.5rem', border: '1px solid #FECACA', boxShadow: 'var(--shadow-xl)', width: '100%', maxWidth: '480px', textAlign: 'center' }}>
-          <div style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundColor: '#FEE2E2', color: '#DC2626', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.25rem' }}>
-            <ShieldAlert size={36} />
-          </div>
-          <div>
-            <span className="badge badge-danger" style={{ marginBottom: '0.75rem', backgroundColor: '#FEE2E2', color: '#DC2626', border: '1px solid #FECACA' }}>
-              403 Forbidden • Access Denied
-            </span>
-          </div>
-          <h1 style={{ fontSize: '1.6rem', color: 'var(--text-main)', marginBottom: '0.5rem' }}>
-            Admin Privileges Required
-          </h1>
-          <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '1.5rem' }}>
-            You are currently authenticated as <strong>{customer?.name || 'Devotee'}</strong> (standard customer: <code>role: 'user'</code>). Administrative access to pricing and property inventory is strictly restricted.
-          </p>
-          <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Link to="/" className="btn btn-outline">
-              Return to Home
-            </Link>
-            <button
-              onClick={() => {
-                logoutCustomer();
-              }}
-              className="btn btn-primary"
-            >
-              Sign Out &amp; Staff Login
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // LOGIN SCREEN FOR GUESTS
+  // AUTH GUARD: For unauthenticated users or non-staff devotees
   if (!isAdminLoggedIn) {
     return (
       <div className="syn-main-content" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '80vh', padding: '2rem 1rem' }}>
-        <div style={{ backgroundColor: '#FFFFFF', borderRadius: 'var(--radius-xl)', padding: '2.5rem', border: '1px solid var(--border-gold)', boxShadow: 'var(--shadow-xl)', width: '100%', maxWidth: '440px' }}>
-          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-            <div style={{ width: '60px', height: '60px', borderRadius: '50%', backgroundColor: 'var(--primary-light)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem' }}>
-              <ShieldAlert size={32} color="var(--primary)" />
+        <div style={{ backgroundColor: '#FFFFFF', borderRadius: 'var(--radius-xl)', padding: '2.5rem', border: '1px solid var(--border-gold)', boxShadow: 'var(--shadow-xl)', width: '100%', maxWidth: '460px' }}>
+          <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
+            <div style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundColor: 'var(--primary-light)', color: 'var(--primary)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem' }}>
+              <ShieldAlert size={32} />
             </div>
-            <h1 style={{ fontSize: '1.6rem', color: 'var(--text-main)', marginBottom: '0.25rem' }}>Staff & Admin Portal</h1>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Shree Yatri Nivas Management System</p>
+            <h1 style={{ fontSize: '1.6rem', color: 'var(--text-main)', marginBottom: '0.35rem' }}>
+              Staff &amp; Admin Portal
+            </h1>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+              Shree Yatri Nivas Management &amp; Access Control
+            </p>
           </div>
 
-          <form onSubmit={handleAdminLoginSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+          {customer && (
+            <div style={{ backgroundColor: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 'var(--radius-md)', padding: '0.85rem', marginBottom: '1.25rem', fontSize: '0.82rem', color: '#991B1B' }}>
+              Currently authenticated as devotee <strong>{customer.name || customer.email}</strong>. Administrative privileges are required to view this dashboard.
+            </div>
+          )}
+
+          <div style={{ backgroundColor: 'var(--bg-canvas)', borderRadius: 'var(--radius-md)', padding: '0.85rem 1rem', marginBottom: '1.5rem', border: '1px solid var(--border-light)', fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 600, color: 'var(--primary)', marginBottom: '0.2rem' }}>
+              <Info size={15} /> Unified Portal Access
+            </div>
+            Sign in using your administrator or staff credentials. You can also sign in directly via the website header login.
+          </div>
+
+          <form onSubmit={handleAdminLoginSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.15rem' }}>
             <div className="form-group">
               <label className="form-label">
-                <User size={15} color="var(--primary)" /> Admin Username
+                <User size={15} color="var(--primary)" /> Email Address
               </label>
               <input
-                type="text"
+                type="email"
                 required
-                placeholder="Username (admin)"
+                placeholder="admin@gmail.com"
                 className="form-control"
                 value={adminUser}
                 onChange={(e) => setAdminUser(e.target.value)}
@@ -438,27 +524,43 @@ export const Admin = ({ initialTab }) => {
               <input
                 type="password"
                 required
-                placeholder="Password (admin123)"
+                placeholder="••••••••"
                 className="form-control"
                 value={adminPass}
                 onChange={(e) => setAdminPass(e.target.value)}
               />
             </div>
 
-            <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '0.5rem' }}>
-              Authenticate & Enter
+            <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '0.5rem', justifyContent: 'center' }}>
+              Sign In to Management Portal
             </button>
+
+            <div style={{ textAlign: 'center', margin: '0.35rem 0' }}>
+              <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>— or —</span>
+            </div>
 
             <button
               type="button"
-              onClick={handleQuickDemoLogin}
+              onClick={() => openAuthModal('login')}
               className="btn btn-secondary"
-              style={{ width: '100%', border: '1px dashed var(--gold)', color: 'var(--primary)' }}
+              style={{ width: '100%', justifyContent: 'center' }}
             >
-              <Sparkles size={16} color="var(--gold)" />
-              <span>1-Click Staff Demo Login (admin / admin123)</span>
+              Sign In via Website Public Login
             </button>
           </form>
+
+          {customer && (
+            <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid var(--border-light)', textAlign: 'center' }}>
+              <button
+                type="button"
+                onClick={logoutCustomer}
+                className="btn btn-outline btn-sm"
+                style={{ width: '100%', justifyContent: 'center' }}
+              >
+                Sign Out from Devotee Account
+              </button>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -532,6 +634,12 @@ export const Admin = ({ initialTab }) => {
           >
             <Users size={18} /> Devotee Accounts ({customers.length})
           </button>
+          <button
+            onClick={() => setActiveTab('staff')}
+            className={`admin-nav-item ${activeTab === 'staff' ? 'active' : ''}`}
+          >
+            <ShieldCheck size={18} /> Staff &amp; Access ({staffList.length})
+          </button>
         </nav>
 
         <div style={{ paddingTop: '1.5rem', borderTop: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
@@ -544,14 +652,6 @@ export const Admin = ({ initialTab }) => {
           >
             <Cloud size={15} color="var(--primary)" />
             <span>{syncingCloud ? 'Syncing to Cloud...' : 'Sync to Firestore'}</span>
-          </button>
-          <button
-            onClick={handleResetSeedData}
-            className="btn btn-secondary btn-sm"
-            style={{ width: '100%', justifyContent: 'flex-start' }}
-            title="Reset system to seed demo data"
-          >
-            <RotateCcw size={15} /> Reset Demo Data
           </button>
           <button
             onClick={logoutAdmin}
@@ -1472,6 +1572,286 @@ export const Admin = ({ initialTab }) => {
                   </tbody>
                 </table>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 6: STAFF & ACCESS CONTROL */}
+        {activeTab === 'staff' && (
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+              <div>
+                <h1 style={{ fontSize: '1.8rem', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                  <ShieldCheck size={26} color="var(--primary)" /> Staff &amp; Access Control
+                </h1>
+                <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+                  Manage master administrator credentials and provision staff accounts with dashboard access.
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                <span className="badge badge-primary" style={{ padding: '0.5rem 0.9rem', fontSize: '0.85rem' }}>
+                  <Users size={15} style={{ marginRight: '6px' }} />
+                  {staffList.length} Active Staff {staffList.length === 1 ? 'Member' : 'Members'}
+                </span>
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+              
+              {/* Card 1: Master Admin Credentials */}
+              <div style={{ backgroundColor: '#FFFFFF', borderRadius: 'var(--radius-lg)', padding: '1.75rem', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1.25rem', paddingBottom: '0.75rem', borderBottom: '1px solid var(--border-light)' }}>
+                  <div style={{ width: '38px', height: '38px', borderRadius: 'var(--radius-sm)', backgroundColor: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Key size={20} />
+                  </div>
+                  <div>
+                    <h3 style={{ fontSize: '1.1rem', color: 'var(--text-main)', margin: 0 }}>Master Admin Credentials</h3>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Change primary administrator email &amp; password</div>
+                  </div>
+                </div>
+
+                <form onSubmit={handleUpdateAdminProfile} style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
+                  <div className="form-group">
+                    <label className="form-label">Admin Display Name</label>
+                    <input
+                      type="text"
+                      required
+                      className="form-control"
+                      value={adminEmailForm.name}
+                      onChange={(e) => setAdminEmailForm({ ...adminEmailForm, name: e.target.value })}
+                      placeholder="Front Desk Administrator"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Admin Email Address</label>
+                    <input
+                      type="email"
+                      required
+                      className="form-control"
+                      value={adminEmailForm.email}
+                      onChange={(e) => setAdminEmailForm({ ...adminEmailForm, email: e.target.value })}
+                      placeholder="admin@gmail.com"
+                    />
+                    <small style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+                      Used to sign in through the public website sign-in or admin gate.
+                    </small>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Admin Password</label>
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        type={showAdminPass ? 'text' : 'password'}
+                        required
+                        className="form-control"
+                        style={{ paddingRight: '2.5rem' }}
+                        value={adminEmailForm.password}
+                        onChange={(e) => setAdminEmailForm({ ...adminEmailForm, password: e.target.value })}
+                        placeholder="••••••••"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowAdminPass(!showAdminPass)}
+                        style={{
+                          position: 'absolute',
+                          right: '10px',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          background: 'none',
+                          border: 'none',
+                          color: 'var(--text-muted)',
+                          cursor: 'pointer',
+                          padding: '4px'
+                        }}
+                        title={showAdminPass ? 'Hide password' : 'Show password'}
+                      >
+                        {showAdminPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isUpdatingAdmin}
+                    className="btn btn-primary"
+                    style={{ marginTop: '0.5rem', width: '100%', justifyContent: 'center' }}
+                  >
+                    <Save size={16} />
+                    <span>{isUpdatingAdmin ? 'Updating Credentials...' : 'Save Administrator Credentials'}</span>
+                  </button>
+                </form>
+              </div>
+
+              {/* Card 2: Provision New Staff Member */}
+              <div style={{ backgroundColor: '#FFFFFF', borderRadius: 'var(--radius-lg)', padding: '1.75rem', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1.25rem', paddingBottom: '0.75rem', borderBottom: '1px solid var(--border-light)' }}>
+                  <div style={{ width: '38px', height: '38px', borderRadius: 'var(--radius-sm)', backgroundColor: 'var(--gold-light)', color: 'var(--gold)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <UserPlus size={20} />
+                  </div>
+                  <div>
+                    <h3 style={{ fontSize: '1.1rem', color: 'var(--text-main)', margin: 0 }}>Provision Staff Account</h3>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Grant dashboard access to front desk personnel</div>
+                  </div>
+                </div>
+
+                <form onSubmit={handleCreateStaff} style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
+                  <div className="form-group">
+                    <label className="form-label">Staff Full Name *</label>
+                    <input
+                      type="text"
+                      required
+                      className="form-control"
+                      value={newStaffForm.name}
+                      onChange={(e) => setNewStaffForm({ ...newStaffForm, name: e.target.value })}
+                      placeholder="e.g. Ramesh Kulkarni"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Staff Email Address *</label>
+                    <input
+                      type="email"
+                      required
+                      className="form-control"
+                      value={newStaffForm.email}
+                      onChange={(e) => setNewStaffForm({ ...newStaffForm, email: e.target.value })}
+                      placeholder="e.g. ramesh@shreeyatrinivas.in"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Assigned Login Password *</label>
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        type={showNewStaffPass ? 'text' : 'password'}
+                        required
+                        className="form-control"
+                        style={{ paddingRight: '2.5rem' }}
+                        value={newStaffForm.password}
+                        onChange={(e) => setNewStaffForm({ ...newStaffForm, password: e.target.value })}
+                        placeholder="Create a password for staff"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowNewStaffPass(!showNewStaffPass)}
+                        style={{
+                          position: 'absolute',
+                          right: '10px',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          background: 'none',
+                          border: 'none',
+                          color: 'var(--text-muted)',
+                          cursor: 'pointer',
+                          padding: '4px'
+                        }}
+                        title={showNewStaffPass ? 'Hide password' : 'Show password'}
+                      >
+                        {showNewStaffPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Access Level / Role</label>
+                    <select
+                      className="form-control"
+                      value={newStaffForm.role}
+                      onChange={(e) => setNewStaffForm({ ...newStaffForm, role: e.target.value })}
+                    >
+                      <option value="staff">Staff (Front Desk &amp; Booking Management)</option>
+                      <option value="admin">Administrator (Full Access)</option>
+                    </select>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isCreatingStaff}
+                    className="btn btn-secondary"
+                    style={{ marginTop: '0.5rem', width: '100%', justifyContent: 'center', borderColor: 'var(--gold)', color: 'var(--primary)', fontWeight: 600 }}
+                  >
+                    <Plus size={16} color="var(--gold)" />
+                    <span>{isCreatingStaff ? 'Creating Account...' : 'Create Staff Member'}</span>
+                  </button>
+                </form>
+              </div>
+
+            </div>
+
+            {/* Active Staff List Table */}
+            <div style={{ backgroundColor: '#FFFFFF', borderRadius: 'var(--radius-lg)', padding: '1.75rem', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', paddingBottom: '0.75rem', borderBottom: '1px solid var(--border-light)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                  <Users size={20} color="var(--primary)" />
+                  <div>
+                    <h3 style={{ fontSize: '1.1rem', color: 'var(--text-main)', margin: 0 }}>Active Staff Accounts</h3>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Staff credentials provisioned for portal sign-in</div>
+                  </div>
+                </div>
+              </div>
+
+              {staffList.length > 0 ? (
+                <div className="table-responsive">
+                  <table className="syn-table">
+                    <thead>
+                      <tr>
+                        <th>Staff Member</th>
+                        <th>Email (Login Identifier)</th>
+                        <th>Role</th>
+                        <th>Password</th>
+                        <th>Created Date</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {staffList.map((s) => (
+                        <tr key={s.id}>
+                          <td>
+                            <div style={{ fontWeight: 700, color: 'var(--text-main)' }}>{s.name}</div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>ID: {s.id}</div>
+                          </td>
+                          <td>
+                            <span style={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>{s.email}</span>
+                          </td>
+                          <td>
+                            <span className={`badge ${s.role === 'admin' ? 'badge-primary' : 'badge-warning'}`}>
+                              {s.role === 'admin' ? 'Administrator' : 'Staff'}
+                            </span>
+                          </td>
+                          <td>
+                            <span style={{ fontFamily: 'monospace', fontSize: '0.85rem', backgroundColor: 'var(--bg-canvas)', padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--border-light)' }}>
+                              {s.password}
+                            </span>
+                          </td>
+                          <td style={{ fontSize: '0.8rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                            {s.created_at ? new Date(s.created_at).toLocaleDateString('en-IN') : 'Recently'}
+                          </td>
+                          <td>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteStaffMember(s.id, s.name)}
+                              className="btn btn-danger btn-sm"
+                              title="Revoke staff account"
+                            >
+                              <Trash2 size={14} /> Revoke Access
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div style={{ padding: '2.5rem 1rem', textAlign: 'center', backgroundColor: 'var(--bg-canvas)', borderRadius: 'var(--radius-md)', color: 'var(--text-muted)', fontSize: '0.88rem', border: '1px dashed var(--border-light)' }}>
+                  <Users size={32} style={{ margin: '0 auto 0.75rem', opacity: 0.5, display: 'block' }} />
+                  <div style={{ fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.25rem' }}>No staff accounts provisioned yet</div>
+                  <div style={{ fontSize: '0.8rem', maxWidth: '420px', margin: '0 auto' }}>
+                    Use the "Provision Staff Account" form above to create email and password credentials for front desk receptionists and staff members.
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

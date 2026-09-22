@@ -24,7 +24,16 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     StorageService.init();
-    setIsAdminLoggedIn(StorageService.isAdminLoggedIn());
+
+    // Check if active session is Admin or Staff
+    const activeCust = StorageService.getCurrentCustomer();
+    if (activeCust && (activeCust.role === 'admin' || activeCust.role === 'staff')) {
+      setIsAdminLoggedIn(true);
+      setCustomer(activeCust);
+      setAuthLoading(false);
+    } else {
+      setIsAdminLoggedIn(StorageService.isAdminLoggedIn());
+    }
 
     // Listen to Firebase Authentication state in real-time
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -49,7 +58,7 @@ export const AuthProvider = ({ children }) => {
             setCustomer(session);
             StorageService.setCurrentCustomer(session);
           } else {
-            // Document does not exist yet (e.g. initial Google login)
+            // First-time Google or new Auth user
             const newProfile = {
               id: firebaseUser.uid,
               uid: firebaseUser.uid,
@@ -73,9 +82,14 @@ export const AuthProvider = ({ children }) => {
           if (cached) setCustomer(cached);
         }
       } else {
-        // If not in Firebase Auth, check if local customer session exists (e.g. demo mode)
+        // If not in Firebase Auth, preserve admin or staff if active
         const localCust = StorageService.getCurrentCustomer();
-        setCustomer(localCust || null);
+        if (localCust && (localCust.role === 'admin' || localCust.role === 'staff')) {
+          setCustomer(localCust);
+          setIsAdminLoggedIn(true);
+        } else {
+          setCustomer(localCust || null);
+        }
       }
       setAuthLoading(false);
     });
@@ -92,9 +106,25 @@ export const AuthProvider = ({ children }) => {
     setIsAuthModalOpen(false);
   }, []);
 
-  // 1. Devotee Sign-in with Email & Password via Firebase Auth
+  // 1. Unified Sign-in with Email & Password (Devotees, Staff & Administrators)
   const loginCustomer = useCallback(async (identifier, password) => {
     setAuthLoading(true);
+
+    // Check 1: Is this an Administrator or Staff member logging in via public login?
+    const adminStaffCheck = StorageService.validateAdminOrStaffLogin(identifier, password);
+    if (adminStaffCheck.success) {
+      const user = adminStaffCheck.user;
+      StorageService.setCurrentCustomer(user);
+      localStorage.setItem('syn_admin_auth_v1', 'true');
+      setIsAdminLoggedIn(true);
+      setCustomer(user);
+      setAuthLoading(false);
+      setIsAuthModalOpen(false);
+      showSuccess(`Welcome, ${user.name}! Logged into ${user.role === 'admin' ? 'Administrator' : 'Staff'} Portal.`);
+      return { success: true, role: user.role, isAdmin: true };
+    }
+
+    // Check 2: Authenticate Devotee through Firebase Auth
     try {
       const email = identifier.includes('@')
         ? identifier.trim().toLowerCase()
@@ -128,30 +158,21 @@ export const AuthProvider = ({ children }) => {
       showSuccess(`Welcome back, ${session.name}!`);
       setIsAuthModalOpen(false);
       setAuthLoading(false);
-      return true;
+      return { success: true, role: 'user', isAdmin: false };
     } catch (err) {
-      console.warn('Firebase login failed, testing local fallback:', err.message);
-      // Graceful fallback for local demo accounts
-      const res = StorageService.customerLogin(identifier, password);
-      if (res.success) {
-        setCustomer(res.customer);
-        showSuccess(`Welcome back, ${res.customer.name}!`);
-        setIsAuthModalOpen(false);
-        setAuthLoading(false);
-        return true;
-      }
+      console.warn('Firebase login failed:', err.message);
 
       let errorMsg = 'Invalid email/mobile or password.';
       if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
         errorMsg = 'Incorrect login credentials. Please verify your email and password.';
       } else if (err.code === 'auth/too-many-requests') {
-        errorMsg = 'Too many failed attempts. Please reset your password or try again later.';
+        errorMsg = 'Too many failed attempts. Please try again later.';
       } else if (err.code) {
         errorMsg = err.message;
       }
       showError(errorMsg);
       setAuthLoading(false);
-      return false;
+      return { success: false, error: errorMsg };
     }
   }, [showSuccess, showError]);
 
@@ -283,6 +304,8 @@ export const AuthProvider = ({ children }) => {
       console.warn('Firebase signOut error:', e.message);
     }
     StorageService.customerLogout();
+    StorageService.adminLogout();
+    setIsAdminLoggedIn(false);
     setCustomer(null);
     showInfo('You have logged out successfully.');
   }, [showInfo]);
@@ -291,11 +314,13 @@ export const AuthProvider = ({ children }) => {
   const loginAdmin = useCallback((username, password) => {
     const ok = StorageService.adminLogin(username, password);
     if (ok) {
+      const active = StorageService.getCurrentCustomer();
       setIsAdminLoggedIn(true);
+      setCustomer(active);
       showSuccess('Admin access granted.');
       return true;
     } else {
-      showError('Invalid admin credentials. Use admin / admin123');
+      showError('Invalid admin credentials. Please use your configured email and password.');
       return false;
     }
   }, [showSuccess, showError]);
@@ -303,8 +328,50 @@ export const AuthProvider = ({ children }) => {
   const logoutAdmin = useCallback(() => {
     StorageService.adminLogout();
     setIsAdminLoggedIn(false);
+    setCustomer(null);
     showInfo('Admin signed out.');
   }, [showInfo]);
+
+  // 6. Admin Authority: Update Own Credentials
+  const updateAdminCredentials = useCallback((newConfig) => {
+    try {
+      const updated = StorageService.updateAdminConfig(newConfig);
+      if (customer && customer.role === 'admin') {
+        const refreshed = { ...customer, email: updated.email, name: updated.name };
+        setCustomer(refreshed);
+        StorageService.setCurrentCustomer(refreshed);
+      }
+      showSuccess('Administrator credentials updated successfully!');
+      return { success: true, config: updated };
+    } catch (err) {
+      showError(err.message || 'Failed to update credentials.');
+      return { success: false, message: err.message };
+    }
+  }, [customer, showSuccess, showError]);
+
+  // 7. Admin Authority: Create Staff Account
+  const createStaff = useCallback((staffData) => {
+    try {
+      const newStaff = StorageService.createStaffMember(staffData);
+      showSuccess(`Staff account created for ${newStaff.name} (${newStaff.email})!`);
+      return { success: true, staff: newStaff };
+    } catch (err) {
+      showError(err.message || 'Failed to create staff account.');
+      return { success: false, message: err.message };
+    }
+  }, [showSuccess, showError]);
+
+  // 8. Admin Authority: Delete Staff Account
+  const deleteStaff = useCallback((id) => {
+    try {
+      StorageService.deleteStaffMember(id);
+      showInfo('Staff account removed.');
+      return { success: true };
+    } catch (err) {
+      showError(err.message || 'Failed to remove staff.');
+      return { success: false };
+    }
+  }, [showInfo, showError]);
 
   return (
     <AuthContext.Provider
@@ -323,7 +390,10 @@ export const AuthProvider = ({ children }) => {
         loginWithGoogle,
         logoutCustomer,
         loginAdmin,
-        logoutAdmin
+        logoutAdmin,
+        updateAdminCredentials,
+        createStaff,
+        deleteStaff
       }}
     >
       {children}

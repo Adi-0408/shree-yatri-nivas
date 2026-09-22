@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { X, Lock, Mail, Phone, User, MapPin, Sparkles, Loader2 } from 'lucide-react';
+import { X, Lock, Mail, Phone, User, MapPin, Loader2, ShieldCheck } from 'lucide-react';
 
 export const AuthModal = () => {
+  const navigate = useNavigate();
   const {
     isAuthModalOpen,
     closeAuthModal,
@@ -15,7 +17,7 @@ export const AuthModal = () => {
   } = useAuth();
   
   // Login form state
-  const [loginIdentifier, setLoginIdentifier] = useState('');
+  const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
 
   // Register form state
@@ -27,14 +29,17 @@ export const AuthModal = () => {
 
   if (!isAuthModalOpen) return null;
 
-  const handleLoginSubmit = (e) => {
+  const handleLoginSubmit = async (e) => {
     e.preventDefault();
-    loginCustomer(loginIdentifier, loginPassword);
+    const res = await loginCustomer(loginEmail, loginPassword);
+    if (res && res.success && res.isAdmin) {
+      navigate('/admin');
+    }
   };
 
-  const handleRegisterSubmit = (e) => {
+  const handleRegisterSubmit = async (e) => {
     e.preventDefault();
-    registerCustomer({
+    await registerCustomer({
       name: regName,
       email: regEmail,
       mobile: regMobile,
@@ -43,24 +48,18 @@ export const AuthModal = () => {
     });
   };
 
-  const handleFillDemo = () => {
-    setLoginIdentifier('ramesh@example.com');
-    setLoginPassword('password123');
-    loginCustomer('ramesh@example.com', 'password123');
-  };
-
   return (
     <div className="modal-overlay" onClick={closeAuthModal} role="dialog" aria-modal="true">
-      <div className="modal-dialog" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '480px' }}>
+      <div className="modal-dialog" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '460px' }}>
         {/* Header */}
         <div className="modal-header">
           <div>
-            <h2 style={{ fontSize: '1.35rem', color: 'var(--text-main)' }}>
-              {authModalTab === 'login' ? 'Devotee Sign In' : 'Create Guest Account'}
+            <h2 style={{ fontSize: '1.35rem', color: 'var(--text-main)', fontWeight: 800 }}>
+              {authModalTab === 'login' ? 'Devotee & Staff Sign In' : 'Create Devotee Account'}
             </h2>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
               {authModalTab === 'login'
-                ? 'Sign in with your Firebase credentials or Google account'
+                ? 'Sign in to access your bookings or Administrator dashboard'
                 : 'Join Shree Yatri Nivas devotee community'}
             </p>
           </div>
@@ -84,7 +83,7 @@ export const AuthModal = () => {
               backgroundColor: authModalTab === 'login' ? 'var(--primary-light)' : 'transparent'
             }}
           >
-            Sign In
+            Direct Sign In
           </button>
           <button
             type="button"
@@ -105,7 +104,7 @@ export const AuthModal = () => {
 
         {/* Modal Body */}
         <div className="modal-body">
-          {/* Google Sign In Button */}
+          {/* 1. Google One-Click Login */}
           <button
             type="button"
             onClick={loginWithGoogle}
@@ -138,10 +137,10 @@ export const AuthModal = () => {
             <span>Continue with Google</span>
           </button>
 
-          <div style={{ textAlign: 'center', margin: '0.75rem 0', position: 'relative' }}>
+          <div style={{ textAlign: 'center', margin: '0.75rem 0 1rem', position: 'relative' }}>
             <div style={{ borderBottom: '1px solid var(--border-light)', position: 'absolute', top: '50%', width: '100%' }} />
-            <span style={{ backgroundColor: '#FFFFFF', padding: '0 0.75rem', position: 'relative', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-              OR WITH EMAIL &amp; PASSWORD
+            <span style={{ backgroundColor: '#FFFFFF', padding: '0 0.75rem', position: 'relative', fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+              OR DIRECT EMAIL SIGN IN
             </span>
           </div>
 
@@ -149,21 +148,22 @@ export const AuthModal = () => {
             <form onSubmit={handleLoginSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
               <div className="form-group">
                 <label className="form-label">
-                  <Mail size={15} /> Email or Mobile
+                  <Mail size={15} color="var(--primary)" /> Email Address
                 </label>
                 <input
-                  type="text"
+                  type="email"
                   required
-                  placeholder="e.g. devotee@example.com or 9823045671"
+                  placeholder="Enter your email (e.g. admin@gmail.com)"
                   className="form-control"
-                  value={loginIdentifier}
-                  onChange={(e) => setLoginIdentifier(e.target.value)}
+                  value={loginEmail}
+                  onChange={(e) => setLoginEmail(e.target.value)}
+                  autoComplete="email"
                 />
               </div>
 
               <div className="form-group">
                 <label className="form-label">
-                  <Lock size={15} /> Password
+                  <Lock size={15} color="var(--primary)" /> Password
                 </label>
                 <input
                   type="password"
@@ -172,6 +172,7 @@ export const AuthModal = () => {
                   className="form-control"
                   value={loginPassword}
                   onChange={(e) => setLoginPassword(e.target.value)}
+                  autoComplete="current-password"
                 />
               </div>
 
@@ -179,7 +180,7 @@ export const AuthModal = () => {
                 type="submit"
                 disabled={authLoading}
                 className="btn btn-primary"
-                style={{ width: '100%', marginTop: '0.5rem' }}
+                style={{ width: '100%', marginTop: '0.5rem', minHeight: '44px' }}
               >
                 {authLoading ? (
                   <>
@@ -187,37 +188,36 @@ export const AuthModal = () => {
                     <span>Signing In...</span>
                   </>
                 ) : (
-                  <span>Sign In to Account</span>
+                  <span>Direct Sign In</span>
                 )}
               </button>
 
-              <div style={{ textAlign: 'center', margin: '0.5rem 0', position: 'relative' }}>
-                <div style={{ borderBottom: '1px solid var(--border-light)', position: 'absolute', top: '50%', width: '100%' }} />
-                <span style={{ backgroundColor: '#FFFFFF', padding: '0 0.75rem', position: 'relative', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                  OR QUICK DEMO
-                </span>
+              <div style={{
+                marginTop: '0.5rem',
+                padding: '0.65rem 0.85rem',
+                borderRadius: 'var(--radius-sm)',
+                backgroundColor: 'var(--bg-subtle)',
+                border: '1px solid var(--border-light)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                fontSize: '0.75rem',
+                color: 'var(--text-secondary)'
+              }}>
+                <ShieldCheck size={16} color="var(--primary)" />
+                <span>Administrators &amp; staff can also sign in directly using their authorized email.</span>
               </div>
-
-              <button
-                type="button"
-                onClick={handleFillDemo}
-                className="btn btn-secondary"
-                style={{ width: '100%', border: '1px dashed var(--gold)', color: 'var(--primary)' }}
-              >
-                <Sparkles size={16} color="var(--gold)" />
-                <span>1-Click Devotee Demo Sign In (Ramesh)</span>
-              </button>
             </form>
           ) : (
             <form onSubmit={handleRegisterSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
               <div className="form-group">
                 <label className="form-label">
-                  <User size={15} /> Full Name *
+                  <User size={15} color="var(--primary)" /> Full Name *
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Anand Kulkarni"
+                  placeholder="e.g. Devotee Name"
                   className="form-control"
                   value={regName}
                   onChange={(e) => setRegName(e.target.value)}
@@ -227,12 +227,12 @@ export const AuthModal = () => {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div className="form-group">
                   <label className="form-label">
-                    <Mail size={15} /> Email Address *
+                    <Mail size={15} color="var(--primary)" /> Email Address *
                   </label>
                   <input
                     type="email"
                     required
-                    placeholder="name@domain.com"
+                    placeholder="devotee@example.com"
                     className="form-control"
                     value={regEmail}
                     onChange={(e) => setRegEmail(e.target.value)}
@@ -240,7 +240,7 @@ export const AuthModal = () => {
                 </div>
                 <div className="form-group">
                   <label className="form-label">
-                    <Phone size={15} /> Mobile Number *
+                    <Phone size={15} color="var(--primary)" /> Mobile Number *
                   </label>
                   <input
                     type="tel"
@@ -256,11 +256,11 @@ export const AuthModal = () => {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div className="form-group">
                   <label className="form-label">
-                    <MapPin size={15} /> City / Hometown
+                    <MapPin size={15} color="var(--primary)" /> City / Hometown
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g. Pune / Mumbai"
+                    placeholder="e.g. Pandharpur / Pune"
                     className="form-control"
                     value={regCity}
                     onChange={(e) => setRegCity(e.target.value)}
@@ -268,7 +268,7 @@ export const AuthModal = () => {
                 </div>
                 <div className="form-group">
                   <label className="form-label">
-                    <Lock size={15} /> Password (Min. 6) *
+                    <Lock size={15} color="var(--primary)" /> Password (Min. 6) *
                   </label>
                   <input
                     type="password"
@@ -285,7 +285,7 @@ export const AuthModal = () => {
                 type="submit"
                 disabled={authLoading}
                 className="btn btn-primary"
-                style={{ width: '100%', marginTop: '0.5rem' }}
+                style={{ width: '100%', marginTop: '0.5rem', minHeight: '44px' }}
               >
                 {authLoading ? (
                   <>
@@ -293,7 +293,7 @@ export const AuthModal = () => {
                     <span>Creating Account...</span>
                   </>
                 ) : (
-                  <span>Create Free Account</span>
+                  <span>Create Devotee Account</span>
                 )}
               </button>
             </form>

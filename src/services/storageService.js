@@ -1,4 +1,4 @@
-import { DEFAULT_ROOMS, DEFAULT_BOOKINGS, DEFAULT_REVIEWS, DEFAULT_CUSTOMERS, DEFAULT_PRICING_CONFIG } from './seedData.js';
+import { DEFAULT_ROOMS, DEFAULT_BOOKINGS, DEFAULT_REVIEWS, DEFAULT_CUSTOMERS, DEFAULT_PRICING_CONFIG, DEFAULT_ADMIN_CONFIG } from './seedData.js';
 import { db } from './firebase.js';
 import {
   collection,
@@ -34,7 +34,10 @@ const STORAGE_KEYS = {
   CUSTOMERS: "syn_customers_v1",
   CURRENT_CUSTOMER: "syn_current_customer_v1",
   PRICING_CONFIG: "syn_pricing_config_v2",
-  INQUIRIES: "syn_inquiries_v1"
+  INQUIRIES: "syn_inquiries_v1",
+  ADMIN_CONFIG: "syn_admin_config_v1",
+  STAFF_MEMBERS: "syn_staff_members_v1",
+  CLEANSED_FLAG: "syn_demo_cleansed_v2"
 };
 
 export const StorageService = {
@@ -42,6 +45,42 @@ export const StorageService = {
 
   init() {
     if (typeof window === "undefined") return;
+
+    // One-time automatic cleanup of all legacy demo accounts and demo bookings
+    if (!localStorage.getItem(STORAGE_KEYS.CLEANSED_FLAG)) {
+      localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify([]));
+
+      // Remove mock bookings
+      try {
+        const currentBookings = JSON.parse(localStorage.getItem(STORAGE_KEYS.BOOKINGS) || "[]");
+        const realBookings = currentBookings.filter(b => 
+          b.guest_name !== "Ramesh Sharma" && 
+          b.guest_name !== "Sunita Deshmukh" &&
+          b.booking_reference !== "SYN-20260921-001" &&
+          b.booking_reference !== "SYN-20260920-002"
+        );
+        localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(realBookings));
+      } catch {
+        localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify([]));
+      }
+
+      // Remove mock reviews
+      try {
+        const currentReviews = JSON.parse(localStorage.getItem(STORAGE_KEYS.REVIEWS) || "[]");
+        const realReviews = currentReviews.filter(r => !["REV-101", "REV-102", "REV-103"].includes(r.id));
+        localStorage.setItem(STORAGE_KEYS.REVIEWS, JSON.stringify(realReviews));
+      } catch {
+        localStorage.setItem(STORAGE_KEYS.REVIEWS, JSON.stringify([]));
+      }
+
+      // Clear legacy demo customer session if Ramesh
+      const currentCust = localStorage.getItem(STORAGE_KEYS.CURRENT_CUSTOMER);
+      if (currentCust && (currentCust.includes("ramesh@example.com") || currentCust.includes("Ramesh"))) {
+        localStorage.removeItem(STORAGE_KEYS.CURRENT_CUSTOMER);
+      }
+      localStorage.setItem(STORAGE_KEYS.CLEANSED_FLAG, "true");
+    }
+
     const storedRooms = localStorage.getItem(STORAGE_KEYS.ROOMS);
     if (!storedRooms) {
       localStorage.setItem(STORAGE_KEYS.ROOMS, JSON.stringify(DEFAULT_ROOMS));
@@ -57,6 +96,12 @@ export const StorageService = {
     }
     if (!localStorage.getItem(STORAGE_KEYS.PRICING_CONFIG)) {
       localStorage.setItem(STORAGE_KEYS.PRICING_CONFIG, JSON.stringify(DEFAULT_PRICING_CONFIG));
+    }
+    if (!localStorage.getItem(STORAGE_KEYS.ADMIN_CONFIG)) {
+      localStorage.setItem(STORAGE_KEYS.ADMIN_CONFIG, JSON.stringify(DEFAULT_ADMIN_CONFIG));
+    }
+    if (!localStorage.getItem(STORAGE_KEYS.STAFF_MEMBERS)) {
+      localStorage.setItem(STORAGE_KEYS.STAFF_MEMBERS, JSON.stringify([]));
     }
 
     // Initialize real-time Cloud Firestore synchronization
@@ -148,6 +193,36 @@ export const StorageService = {
         }
       }, (err) => {
         console.warn("Firestore reviews listener:", err.message);
+      });
+
+      // 5. Sync & listen to admin_config
+      const adminRef = doc(db, "settings", "admin_config");
+      onSnapshot(adminRef, (docSnap) => {
+        if (docSnap.exists()) {
+          const cloudAdmin = docSnap.data();
+          localStorage.setItem(STORAGE_KEYS.ADMIN_CONFIG, JSON.stringify(cloudAdmin));
+        } else {
+          // Auto-seed admin config to Firestore if empty
+          const localAdmin = this.getAdminConfig();
+          setDoc(adminRef, cleanForFirestore(localAdmin)).catch(err => {
+            console.warn("Firestore admin auto-seed:", err.message);
+          });
+        }
+      }, (err) => {
+        console.warn("Firestore admin listener:", err.message);
+      });
+
+      // 6. Sync & listen to staff accounts
+      const staffRef = collection(db, "staff");
+      onSnapshot(staffRef, (snapshot) => {
+        if (!snapshot.empty) {
+          const cloudStaff = [];
+          snapshot.forEach(d => cloudStaff.push({ ...d.data(), id: d.id }));
+          localStorage.setItem(STORAGE_KEYS.STAFF_MEMBERS, JSON.stringify(cloudStaff));
+          window.dispatchEvent(new CustomEvent("syn_staff_updated", { detail: cloudStaff }));
+        }
+      }, (err) => {
+        console.warn("Firestore staff listener:", err.message);
       });
     } catch (err) {
       console.warn("Firestore initialization warning:", err.message);
@@ -522,14 +597,160 @@ export const StorageService = {
     }
   },
 
-  // Admin Auth
+  // Admin & Staff Authentication & Management
   isAdminLoggedIn() {
     return localStorage.getItem(STORAGE_KEYS.ADMIN_LOGGED_IN) === "true";
   },
 
+  getAdminConfig() {
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.ADMIN_CONFIG);
+      return data ? JSON.parse(data) : DEFAULT_ADMIN_CONFIG;
+    } catch {
+      return DEFAULT_ADMIN_CONFIG;
+    }
+  },
+
+  updateAdminConfig(newConfig) {
+    if (!newConfig.email || !newConfig.password) {
+      throw new Error("Admin email and password are required.");
+    }
+    const current = this.getAdminConfig();
+    const updated = {
+      ...current,
+      email: newConfig.email.trim().toLowerCase(),
+      password: String(newConfig.password).trim(),
+      name: newConfig.name ? newConfig.name.trim() : (current.name || "Administrator"),
+      role: "admin",
+      updated_at: new Date().toISOString()
+    };
+    localStorage.setItem(STORAGE_KEYS.ADMIN_CONFIG, JSON.stringify(updated));
+
+    if (db) {
+      setDoc(doc(db, "settings", "admin_config"), cleanForFirestore(updated), { merge: true }).catch(err => {
+        console.warn("Firestore updateAdminConfig error:", err.message);
+      });
+    }
+
+    // Update session if currently logged in as admin
+    const currentCust = this.getCurrentCustomer();
+    if (currentCust && currentCust.role === "admin") {
+      this.setCurrentCustomer({ ...currentCust, email: updated.email, name: updated.name });
+    }
+
+    return updated;
+  },
+
+  getStaffList() {
+    this.init();
+    try {
+      return JSON.parse(localStorage.getItem(STORAGE_KEYS.STAFF_MEMBERS) || "[]");
+    } catch {
+      return [];
+    }
+  },
+
+  createStaffMember(staffData) {
+    this.init();
+    if (!staffData.name || !staffData.email || !staffData.password) {
+      throw new Error("Staff name, email, and password are required.");
+    }
+    const staffList = this.getStaffList();
+    const emailClean = staffData.email.trim().toLowerCase();
+
+    // Check duplicate
+    if (staffList.some(s => s.email.toLowerCase() === emailClean) || emailClean === this.getAdminConfig().email.toLowerCase()) {
+      throw new Error("An admin or staff account with this email already exists.");
+    }
+
+    const newStaff = {
+      id: `STAFF-${Date.now()}`,
+      name: staffData.name.trim(),
+      email: emailClean,
+      password: String(staffData.password).trim(),
+      role: staffData.role || "staff",
+      created_at: new Date().toISOString()
+    };
+
+    staffList.push(newStaff);
+    localStorage.setItem(STORAGE_KEYS.STAFF_MEMBERS, JSON.stringify(staffList));
+
+    if (db) {
+      setDoc(doc(db, "staff", newStaff.id), cleanForFirestore(newStaff), { merge: true }).catch(err => {
+        console.warn("Firestore createStaffMember error:", err.message);
+      });
+    }
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("syn_staff_updated", { detail: staffList }));
+    }
+    return newStaff;
+  },
+
+  deleteStaffMember(id) {
+    let staffList = this.getStaffList();
+    staffList = staffList.filter(s => s.id !== id);
+    localStorage.setItem(STORAGE_KEYS.STAFF_MEMBERS, JSON.stringify(staffList));
+
+    if (db) {
+      deleteDoc(doc(db, "staff", id)).catch(err => {
+        console.warn("Firestore deleteStaffMember error:", err.message);
+      });
+    }
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("syn_staff_updated", { detail: staffList }));
+    }
+    return true;
+  },
+
+  validateAdminOrStaffLogin(identifier, password) {
+    this.init();
+    const idClean = (identifier || "").trim().toLowerCase();
+    const passClean = String(password || "").trim();
+    if (!idClean || !passClean) return { success: false };
+
+    // 1. Check Primary Administrator credentials (defaults to admin@gmail.com / 1234 or custom)
+    const admin = this.getAdminConfig();
+    if (admin.email.toLowerCase() === idClean && String(admin.password).trim() === passClean) {
+      return {
+        success: true,
+        user: {
+          id: "admin-master",
+          uid: "admin-master",
+          name: admin.name || "Administrator",
+          email: admin.email,
+          role: "admin",
+          isAdmin: true
+        }
+      };
+    }
+
+    // 2. Check Staff credentials
+    const staffList = this.getStaffList();
+    const staff = staffList.find(s => s.email.toLowerCase() === idClean && String(s.password).trim() === passClean);
+    if (staff) {
+      return {
+        success: true,
+        user: {
+          id: staff.id,
+          uid: staff.id,
+          name: staff.name,
+          email: staff.email,
+          role: staff.role || "staff",
+          isAdmin: true
+        }
+      };
+    }
+
+    return { success: false };
+  },
+
   adminLogin(username, password) {
-    if (username.trim() === "admin" && password.trim() === "admin123") {
+    const res = this.validateAdminOrStaffLogin(username, password);
+    if (res.success) {
       localStorage.setItem(STORAGE_KEYS.ADMIN_LOGGED_IN, "true");
+      this.setCurrentCustomer(res.user);
       return true;
     }
     return false;
@@ -537,6 +758,10 @@ export const StorageService = {
 
   adminLogout() {
     localStorage.removeItem(STORAGE_KEYS.ADMIN_LOGGED_IN);
+    const curr = this.getCurrentCustomer();
+    if (curr && (curr.role === 'admin' || curr.role === 'staff')) {
+      this.customerLogout();
+    }
   },
 
   // Customer Authentication
