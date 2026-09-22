@@ -15,6 +15,7 @@ let serverPricingState = {
     AC: { total_rooms: 3, active: true },
     "Non-AC": { total_rooms: 2, active: true }
   },
+  date_range_rates: [],
   last_modified_by: "Admin",
   last_modified_at: new Date().toISOString(),
   audit_logs: [
@@ -119,6 +120,7 @@ function pricingApiPlugin() {
                   active: body.inventory?.["Non-AC"]?.active !== false
                 }
               },
+              date_range_rates: Array.isArray(body.date_range_rates) ? body.date_range_rates : (serverPricingState.date_range_rates || []),
               last_modified_by: adminUser,
               last_modified_at: new Date().toISOString(),
               audit_logs: [newLog, ...serverPricingState.audit_logs].slice(0, 50)
@@ -161,7 +163,9 @@ function pricingApiPlugin() {
               nights = calcDays > 0 ? calcDays : 1;
             }
 
-            const baseRate = Math.round(serverPricingState.base_rates[acStatus] || (acStatus === 'Non-AC' ? 1400 : 2400));
+            const standardBaseRate = Math.round(serverPricingState.base_rates[acStatus] || (acStatus === 'Non-AC' ? 1400 : 2400));
+            const standardExtraRate = Math.round(serverPricingState.extra_person_rate ?? 700);
+            const dateRangeRates = serverPricingState.date_range_rates || [];
             const baseCapacityPerRoom = serverPricingState.base_capacity_per_room || 2;
             const maxCapacityPerRoom = serverPricingState.max_capacity_per_room || 4;
             const maxAllowedGuests = maxCapacityPerRoom * parsedQty;
@@ -173,10 +177,50 @@ function pricingApiPlugin() {
             const includedGuests = baseCapacityPerRoom * parsedQty;
             const extraGuests = Math.max(0, chargeableGuests - includedGuests);
 
-            const extraPersonRate = Math.round(serverPricingState.extra_person_rate ?? 700);
-            const roomBaseCharge = Math.round(baseRate * parsedQty * nights);
-            const extraGuestCharge = Math.round(extraGuests * extraPersonRate * nights);
+            let roomBaseCharge = 0;
+            let extraGuestCharge = 0;
+            const nightBreakdowns = [];
+            let hasSpecialDateRate = false;
+
+            if (checkIn && checkOut && nights > 0) {
+              const startMs = new Date(checkIn).getTime();
+              for (let i = 0; i < nights; i++) {
+                const nightDate = new Date(startMs + i * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+                const match = dateRangeRates.find(dr => dr.start_date && dr.end_date && nightDate >= dr.start_date && nightDate <= dr.end_date);
+                let nightRate = standardBaseRate;
+                let nightExtra = standardExtraRate;
+                let isOverride = false;
+                let overrideName = null;
+
+                if (match) {
+                  const overrideRate = match.rates?.[acStatus] ??
+                    match.rates?.all ??
+                    match.override_rate ??
+                    match.rate ??
+                    match.daily_rate;
+
+                  if (typeof overrideRate === 'number' && overrideRate >= 0) {
+                    nightRate = Math.round(overrideRate);
+                    isOverride = true;
+                    hasSpecialDateRate = true;
+                    overrideName = match.name || match.title || 'Seasonal Rate';
+                  }
+                  if (typeof match.extra_person_rate === 'number' && match.extra_person_rate >= 0) {
+                    nightExtra = Math.round(match.extra_person_rate);
+                  }
+                }
+
+                roomBaseCharge += Math.round(nightRate * parsedQty);
+                extraGuestCharge += Math.round(extraGuests * nightExtra);
+                nightBreakdowns.push({ date: nightDate, rate: nightRate, isOverride, overrideName });
+              }
+            } else {
+              roomBaseCharge = Math.round(standardBaseRate * parsedQty * nights);
+              extraGuestCharge = Math.round(extraGuests * standardExtraRate * nights);
+            }
+
             const totalAmount = Math.round(roomBaseCharge + extraGuestCharge);
+            const baseRate = nights > 0 ? Math.round(roomBaseCharge / (parsedQty * nights)) : standardBaseRate;
 
             return sendJson(200, {
               success: true,
@@ -184,6 +228,7 @@ function pricingApiPlugin() {
                 numberOfNights: nights,
                 roomQty: parsedQty,
                 baseRate,
+                standardBaseRate,
                 roomBaseCharge,
                 adults: parsedAdults,
                 childrenUnder4: parsedKidsUnder4,
@@ -193,13 +238,15 @@ function pricingApiPlugin() {
                 includedGuests,
                 chargeableGuests,
                 extraGuests,
-                extraPersonRate,
+                extraPersonRate: standardExtraRate,
                 extraGuestCharge,
                 totalAmount,
                 maxAllowedGuests,
                 exceedsMaxCapacity,
                 childAgeLimit: childLimit,
-                acStatus
+                acStatus,
+                hasSpecialDateRate,
+                nightBreakdowns
               }
             });
           });

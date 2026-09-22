@@ -664,12 +664,35 @@ export const Booking = () => {
                       <span className="badge badge-success" style={{ fontSize: '0.72rem' }}>All Taxes Included</span>
                     </div>
 
+                    {priceBreakdown.hasSpecialDateRate && (
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.45rem',
+                        marginBottom: '0.85rem',
+                        padding: '0.5rem 0.8rem',
+                        borderRadius: 'var(--radius-sm)',
+                        backgroundColor: 'var(--gold-light)',
+                        border: '1px solid var(--gold-border)',
+                        fontSize: '0.8rem',
+                        color: 'var(--gold-hover)',
+                        fontWeight: 600
+                      }}>
+                        <Sparkles size={14} />
+                        <span>Special Seasonal / Date-Range Rates applied for selected dates</span>
+                      </div>
+                    )}
+
                     {/* Line 1: Room Base Charge */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem', fontSize: '0.9rem' }}>
                       <div>
                         <strong style={{ color: 'var(--text-main)' }}>Room Base Tariff:</strong> {selectedRoom?.room_name || 'Room'}
                         <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-                          ₹{priceBreakdown.baseRate} × {priceBreakdown.roomQty} room × {priceBreakdown.numberOfNights} night{priceBreakdown.numberOfNights > 1 ? 's' : ''} (Includes up to {priceBreakdown.includedGuests} guests)
+                          {priceBreakdown.hasSpecialDateRate ? (
+                            <span>Custom seasonal rate applied across {priceBreakdown.numberOfNights} night{priceBreakdown.numberOfNights > 1 ? 's' : ''} (Avg ₹{Math.round(priceBreakdown.roomBaseCharge / (Math.max(1, priceBreakdown.roomQty * priceBreakdown.numberOfNights)))}/night/room)</span>
+                          ) : (
+                            <span>₹{priceBreakdown.baseRate} × {priceBreakdown.roomQty} room × {priceBreakdown.numberOfNights} night{priceBreakdown.numberOfNights > 1 ? 's' : ''} (Includes up to {priceBreakdown.includedGuests} guests)</span>
+                          )}
                         </div>
                       </div>
                       <span style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-main)' }}>
@@ -928,7 +951,7 @@ export const Booking = () => {
                     <span style={{ color: 'var(--text-secondary)' }}>{checkIn} to {checkOut} ({priceBreakdown.numberOfNights} night{priceBreakdown.numberOfNights > 1 ? 's' : ''})</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>
-                    <span>Room Base Charges (Up to {priceBreakdown.includedGuests} guests):</span>
+                    <span>Room Base Charges (Up to {priceBreakdown.includedGuests} guests){priceBreakdown.hasSpecialDateRate ? ' (Seasonal Override)' : ''}:</span>
                     <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>₹{(priceBreakdown.roomBaseCharge || 0).toLocaleString('en-IN')}</span>
                   </div>
                   {priceBreakdown.extraGuests > 0 && (

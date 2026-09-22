@@ -30,7 +30,9 @@ import {
   Sliders,
   Save,
   History,
-  Info
+  Info,
+  Calendar,
+  CalendarRange
 } from 'lucide-react';
 
 export const Admin = ({ initialTab }) => {
@@ -131,6 +133,71 @@ export const Admin = ({ initialTab }) => {
       showError(err.message || 'Failed to update pricing settings.');
     } finally {
       setIsSavingPricing(false);
+    }
+  };
+
+  // Date-Range / 15-Day Rate Override Form State
+  const [dateRangeForm, setDateRangeForm] = useState({
+    name: '',
+    start_date: '',
+    end_date: '',
+    ac_rate: 3200,
+    non_ac_rate: 1800,
+    extra_person_rate: 850
+  });
+
+  const handleQuick15Days = () => {
+    const today = new Date();
+    const startStr = dateRangeForm.start_date || today.toISOString().split('T')[0];
+    const startDateObj = new Date(startStr);
+    const endDateObj = new Date(startDateObj.getTime() + 15 * 24 * 60 * 60 * 1000);
+    setDateRangeForm(prev => ({
+      ...prev,
+      start_date: startStr,
+      end_date: endDateObj.toISOString().split('T')[0]
+    }));
+  };
+
+  const handleSaveDateRangeRate = (e) => {
+    e.preventDefault();
+    if (!dateRangeForm.start_date || !dateRangeForm.end_date) {
+      showError('Please select both start and end dates.');
+      return;
+    }
+    if (dateRangeForm.end_date < dateRangeForm.start_date) {
+      showError('End date must be after or equal to start date.');
+      return;
+    }
+    try {
+      StorageService.saveDateRangeRate({
+        ...dateRangeForm,
+        name: dateRangeForm.name.trim() || 'Seasonal Rate Period',
+        rates: {
+          AC: parseFloat(dateRangeForm.ac_rate) || 2400,
+          "Non-AC": parseFloat(dateRangeForm.non_ac_rate) || 1400
+        },
+        extra_person_rate: parseFloat(dateRangeForm.extra_person_rate) || 700
+      }, 'Admin');
+      showSuccess(`Date-range rate rule '${dateRangeForm.name || 'Seasonal Rate'}' saved successfully!`);
+      setDateRangeForm({
+        name: '',
+        start_date: '',
+        end_date: '',
+        ac_rate: pricingForm.base_rates?.AC || 2400,
+        non_ac_rate: pricingForm.base_rates?.["Non-AC"] || 1400,
+        extra_person_rate: pricingForm.extra_person_rate || 700
+      });
+      reloadData();
+    } catch (err) {
+      showError(err.message || 'Failed to save date-range rate.');
+    }
+  };
+
+  const handleDeleteDateRangeRate = (id) => {
+    if (window.confirm('Remove this date-range rate rule? Outside these dates, standard tariffs apply.')) {
+      StorageService.deleteDateRangeRate(id, 'Admin');
+      showInfo('Date-range rate rule removed.');
+      reloadData();
     }
   };
 
@@ -1089,9 +1156,9 @@ export const Admin = ({ initialTab }) => {
               {/* Save Button Action */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#FFFFFF', padding: '1.5rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-gold)', boxShadow: 'var(--shadow-md)', marginBottom: '2.5rem', flexWrap: 'wrap', gap: '1rem' }}>
                 <div>
-                  <div style={{ fontWeight: 700, fontSize: '1.05rem', color: 'var(--text-main)' }}>Save &amp; Broadcast Pricing Updates</div>
+                  <div style={{ fontWeight: 700, fontSize: '1.05rem', color: 'var(--text-main)' }}>Save &amp; Broadcast Base Pricing Updates</div>
                   <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                    Changes immediately reflect on user booking calculation, invoices, and room cards.
+                    Standard tariff baseline changes immediately reflect on room cards and standard booking calculations.
                   </div>
                 </div>
                 <button
@@ -1106,7 +1173,204 @@ export const Admin = ({ initialTab }) => {
               </div>
             </form>
 
-            {/* 4. Pricing Audit Logs */}
+            {/* 4. Date-Range Rate Overrides (15-Day / Seasonal Special Pricing) */}
+            <div style={{ backgroundColor: '#FFFFFF', borderRadius: 'var(--radius-lg)', padding: '1.75rem', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)', marginBottom: '2rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', paddingBottom: '0.75rem', borderBottom: '1px solid var(--border-light)', flexWrap: 'wrap', gap: '0.75rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                  <div style={{ width: '38px', height: '38px', borderRadius: 'var(--radius-sm)', backgroundColor: 'var(--gold-light)', color: 'var(--gold)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <CalendarRange size={20} />
+                  </div>
+                  <div>
+                    <h3 style={{ fontSize: '1.15rem', color: 'var(--text-main)', margin: 0 }}>Date-Range &amp; 15-Day Rate Overrides</h3>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                      Set special tariffs for specific periods (e.g., 15-day Ashadhi/Kartiki Ekadashi festivals). Standard baseline rates apply outside these dates.
+                    </div>
+                  </div>
+                </div>
+                <span className="badge-pill-surface" style={{ fontSize: '0.75rem' }}>
+                  {(pricingConfig.date_range_rates || []).length} Active Rule{((pricingConfig.date_range_rates || []).length === 1) ? '' : 's'}
+                </span>
+              </div>
+
+              {/* Form to Add New Date-Range Rule */}
+              <form onSubmit={handleSaveDateRangeRate} style={{ backgroundColor: 'var(--bg-canvas)', padding: '1.25rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)', marginBottom: '1.5rem' }}>
+                <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-main)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Plus size={16} color="var(--primary)" /> Add New Date-Range Rate Rule (e.g. 15 Days at Once)
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
+                  <div className="form-group">
+                    <label className="form-label">Period Name / Reason</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Ashadhi Wari (15 Days)"
+                      className="form-control"
+                      value={dateRangeForm.name}
+                      onChange={(e) => setDateRangeForm({ ...dateRangeForm, name: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Start Date</label>
+                    <input
+                      type="date"
+                      required
+                      className="form-control"
+                      value={dateRangeForm.start_date}
+                      onChange={(e) => setDateRangeForm({ ...dateRangeForm, start_date: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                      <label className="form-label" style={{ margin: 0 }}>End Date</label>
+                      <button
+                        type="button"
+                        onClick={handleQuick15Days}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: 'var(--primary)',
+                          fontSize: '0.75rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          padding: '0 4px',
+                          textDecoration: 'underline'
+                        }}
+                        title="Calculate 15 days from start date"
+                      >
+                        ⚡ +15 Days
+                      </button>
+                    </div>
+                    <input
+                      type="date"
+                      required
+                      min={dateRangeForm.start_date}
+                      className="form-control"
+                      value={dateRangeForm.end_date}
+                      onChange={(e) => setDateRangeForm({ ...dateRangeForm, end_date: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">AC Rate (₹/nt)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="50"
+                      required
+                      placeholder="e.g. 3200"
+                      className="form-control"
+                      value={dateRangeForm.ac_rate}
+                      onChange={(e) => setDateRangeForm({ ...dateRangeForm, ac_rate: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Non-AC Rate (₹/nt)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="50"
+                      required
+                      placeholder="e.g. 1800"
+                      className="form-control"
+                      value={dateRangeForm.non_ac_rate}
+                      onChange={(e) => setDateRangeForm({ ...dateRangeForm, non_ac_rate: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Extra Person (₹/nt)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="50"
+                      required
+                      placeholder="e.g. 850"
+                      className="form-control"
+                      value={dateRangeForm.extra_person_rate}
+                      onChange={(e) => setDateRangeForm({ ...dateRangeForm, extra_person_rate: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+                  <button type="submit" className="btn btn-primary btn-sm" style={{ minWidth: '180px', justifyContent: 'center' }}>
+                    <Plus size={16} /> Save Date-Range Rule
+                  </button>
+                </div>
+              </form>
+
+              {/* Table of Configured Date-Range Rules */}
+              {(pricingConfig.date_range_rates && pricingConfig.date_range_rates.length > 0) ? (
+                <div className="table-responsive">
+                  <table className="syn-table">
+                    <thead>
+                      <tr>
+                        <th>Rule / Period</th>
+                        <th>Date Interval</th>
+                        <th style={{ textAlign: 'right' }}>AC Tariff</th>
+                        <th style={{ textAlign: 'right' }}>Non-AC Tariff</th>
+                        <th style={{ textAlign: 'right' }}>Extra Person</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pricingConfig.date_range_rates.map((rule) => {
+                        const start = new Date(rule.start_date).getTime();
+                        const end = new Date(rule.end_date).getTime();
+                        const days = Math.max(1, Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1);
+                        return (
+                          <tr key={rule.id}>
+                            <td>
+                              <div style={{ fontWeight: 700, color: 'var(--text-main)' }}>{rule.name}</div>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>ID: {rule.id}</div>
+                            </td>
+                            <td>
+                              <div style={{ fontWeight: 600 }}>{rule.start_date} to {rule.end_date}</div>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 600 }}>
+                                {days} Day{days > 1 ? 's' : ''} Period
+                              </div>
+                            </td>
+                            <td className="td-number" style={{ fontWeight: 700, color: 'var(--primary)' }}>
+                              ₹{(rule.rates?.AC || 0).toLocaleString('en-IN')}/nt
+                            </td>
+                            <td className="td-number" style={{ fontWeight: 700, color: 'var(--text-main)' }}>
+                              ₹{(rule.rates?.["Non-AC"] || 0).toLocaleString('en-IN')}/nt
+                            </td>
+                            <td className="td-number" style={{ fontWeight: 600 }}>
+                              ₹{(rule.extra_person_rate || 700).toLocaleString('en-IN')}
+                            </td>
+                            <td>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteDateRangeRate(rule.id)}
+                                className="btn btn-danger btn-sm"
+                                title="Remove date range rule"
+                              >
+                                <Trash2 size={14} /> Remove
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div style={{ padding: '2rem 1rem', textAlign: 'center', backgroundColor: 'var(--bg-canvas)', borderRadius: 'var(--radius-md)', color: 'var(--text-muted)', fontSize: '0.88rem', border: '1px dashed var(--border-light)' }}>
+                  <Calendar size={28} style={{ margin: '0 auto 0.5rem', opacity: 0.6, display: 'block' }} />
+                  <div>No date-range rate overrides configured.</div>
+                  <div style={{ fontSize: '0.78rem', marginTop: '4px' }}>
+                    All booking dates currently calculate using standard room tariffs (AC ₹{pricingForm.base_rates?.AC || 2400}, Non-AC ₹{pricingForm.base_rates?.["Non-AC"] || 1400}).
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 5. Pricing Audit Logs */}
             <div style={{ backgroundColor: '#FFFFFF', borderRadius: 'var(--radius-lg)', padding: '1.75rem', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1.25rem', paddingBottom: '0.75rem', borderBottom: '1px solid var(--border-light)' }}>
                 <History size={20} color="var(--primary)" />

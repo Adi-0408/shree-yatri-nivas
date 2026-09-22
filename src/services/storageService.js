@@ -563,6 +563,7 @@ export const StorageService = {
           active: newConfig.inventory?.["Non-AC"]?.active !== false
         }
       },
+      date_range_rates: Array.isArray(newConfig.date_range_rates) ? newConfig.date_range_rates : (current.date_range_rates || []),
       last_modified_by: adminUser,
       last_modified_at: new Date().toISOString(),
       audit_logs: [newLogEntry, ...auditLogs].slice(0, 50)
@@ -591,6 +592,114 @@ export const StorageService = {
     }
 
     return { success: true, pricing: updatedConfig };
+  },
+
+  // Date-Range / Seasonal Rates Management
+  getDateRangeRates() {
+    const config = this.getPricingConfig();
+    return Array.isArray(config.date_range_rates) ? config.date_range_rates : [];
+  },
+
+  saveDateRangeRate(rateData, adminUser = "Admin") {
+    this.init();
+    const config = this.getPricingConfig();
+    const rates = Array.isArray(config.date_range_rates) ? [...config.date_range_rates] : [];
+
+    const newId = rateData.id || `DRR-${Date.now()}`;
+    const payload = {
+      id: newId,
+      name: (rateData.name || "Seasonal Rate").trim(),
+      start_date: rateData.start_date,
+      end_date: rateData.end_date,
+      rates: {
+        AC: Math.round(Number(rateData.rates?.AC ?? rateData.ac_rate ?? config.base_rates?.AC ?? 2400)),
+        "Non-AC": Math.round(Number(rateData.rates?.["Non-AC"] ?? rateData.non_ac_rate ?? config.base_rates?.["Non-AC"] ?? 1400))
+      },
+      extra_person_rate: Math.round(Number(rateData.extra_person_rate ?? config.extra_person_rate ?? 700)),
+      created_at: rateData.created_at || new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    const existingIdx = rates.findIndex(r => r.id === newId);
+    if (existingIdx >= 0) {
+      rates[existingIdx] = payload;
+    } else {
+      rates.push(payload);
+    }
+
+    // Sort by start_date ascending
+    rates.sort((a, b) => a.start_date.localeCompare(b.start_date));
+
+    const updatedConfig = {
+      ...config,
+      date_range_rates: rates,
+      last_modified_by: adminUser,
+      last_modified_at: new Date().toISOString(),
+      audit_logs: [
+        {
+          id: `LOG-${Date.now()}`,
+          timestamp: new Date().toISOString(),
+          modified_by: adminUser,
+          action: `Set date-range rate '${payload.name}' (${payload.start_date} to ${payload.end_date}): AC ₹${payload.rates.AC}, Non-AC ₹${payload.rates["Non-AC"]}`
+        },
+        ...(config.audit_logs || [])
+      ].slice(0, 50)
+    };
+
+    localStorage.setItem(STORAGE_KEYS.PRICING_CONFIG, JSON.stringify(updatedConfig));
+
+    if (typeof fetch !== "undefined") {
+      fetch('/api/admin/pricing', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' },
+        body: JSON.stringify({ ...updatedConfig, adminUser })
+      }).catch(() => {});
+    }
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("syn_pricing_updated", { detail: updatedConfig }));
+    }
+
+    return payload;
+  },
+
+  deleteDateRangeRate(id, adminUser = "Admin") {
+    this.init();
+    const config = this.getPricingConfig();
+    const target = (config.date_range_rates || []).find(r => r.id === id);
+    const rates = (config.date_range_rates || []).filter(r => r.id !== id);
+
+    const updatedConfig = {
+      ...config,
+      date_range_rates: rates,
+      last_modified_by: adminUser,
+      last_modified_at: new Date().toISOString(),
+      audit_logs: [
+        {
+          id: `LOG-${Date.now()}`,
+          timestamp: new Date().toISOString(),
+          modified_by: adminUser,
+          action: `Removed date-range rate rule: ${target?.name || id} (${target?.start_date || ''} to ${target?.end_date || ''})`
+        },
+        ...(config.audit_logs || [])
+      ].slice(0, 50)
+    };
+
+    localStorage.setItem(STORAGE_KEYS.PRICING_CONFIG, JSON.stringify(updatedConfig));
+
+    if (typeof fetch !== "undefined") {
+      fetch('/api/admin/pricing', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' },
+        body: JSON.stringify({ ...updatedConfig, adminUser })
+      }).catch(() => {});
+    }
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("syn_pricing_updated", { detail: updatedConfig }));
+    }
+
+    return true;
   },
 
   // Dynamic Booking Price Calculator
@@ -629,13 +738,15 @@ export const StorageService = {
       nights = calcDays > 0 ? calcDays : 1;
     }
 
-    // Resolve room base rate
+    // Resolve room base rate & AC status
     let room = null;
     if (roomId) {
       room = this.getRoomById(roomId);
     }
     const resolvedAcStatus = room ? room.ac_status : (acStatus || "AC");
-    const baseRate = Math.round(room?.price ?? (config.base_rates?.[resolvedAcStatus] || (resolvedAcStatus === "Non-AC" ? 1400 : 2400)));
+    const standardBaseRate = Math.round(room?.price ?? (config.base_rates?.[resolvedAcStatus] || (resolvedAcStatus === "Non-AC" ? 1400 : 2400)));
+    const standardExtraPersonRate = Math.round(config.extra_person_rate ?? 700);
+    const dateRangeRates = Array.isArray(config.date_range_rates) ? config.date_range_rates : [];
 
     // Occupancy rules
     const baseCapacityPerRoom = config.base_capacity_per_room || 2;
@@ -650,16 +761,76 @@ export const StorageService = {
     const includedGuests = baseCapacityPerRoom * parsedQty;
     const extraGuests = Math.max(0, chargeableGuests - includedGuests);
 
-    // Cost line items (clean integer math to prevent floating-point defects)
-    const extraPersonRate = Math.round(config.extra_person_rate ?? 700);
-    const roomBaseCharge = Math.round(baseRate * parsedQty * nights);
-    const extraGuestCharge = Math.round(extraGuests * extraPersonRate * nights);
+    // Night-by-night dynamic calculation supporting date-range overrides
+    let roomBaseCharge = 0;
+    let extraGuestCharge = 0;
+    const nightBreakdowns = [];
+    let hasSpecialDateRate = false;
+
+    if (checkIn && checkOut && nights > 0) {
+      const startMs = new Date(checkIn).getTime();
+      for (let i = 0; i < nights; i++) {
+        const nightDateObj = new Date(startMs + i * 24 * 60 * 60 * 1000);
+        const nightDateStr = nightDateObj.toISOString().split('T')[0];
+
+        // Find active date-range override
+        const matchedOverride = dateRangeRates.find(dr => {
+          if (!dr.start_date || !dr.end_date) return false;
+          return nightDateStr >= dr.start_date && nightDateStr <= dr.end_date;
+        });
+
+        let nightRate = standardBaseRate;
+        let nightExtraPersonRate = standardExtraPersonRate;
+        let isOverride = false;
+        let overrideName = null;
+
+        if (matchedOverride) {
+          const overrideRate = matchedOverride.rates?.[resolvedAcStatus] ??
+            matchedOverride.rates?.all ??
+            matchedOverride.override_rate ??
+            matchedOverride.rate ??
+            matchedOverride.daily_rate;
+
+          if (typeof overrideRate === 'number' && overrideRate >= 0) {
+            nightRate = Math.round(overrideRate);
+            isOverride = true;
+            hasSpecialDateRate = true;
+            overrideName = matchedOverride.name || matchedOverride.title || "Seasonal Rate";
+          }
+          if (typeof matchedOverride.extra_person_rate === 'number' && matchedOverride.extra_person_rate >= 0) {
+            nightExtraPersonRate = Math.round(matchedOverride.extra_person_rate);
+          }
+        }
+
+        const nightRoomCost = Math.round(nightRate * parsedQty);
+        const nightExtraCost = Math.round(extraGuests * nightExtraPersonRate);
+
+        roomBaseCharge += nightRoomCost;
+        extraGuestCharge += nightExtraCost;
+
+        nightBreakdowns.push({
+          date: nightDateStr,
+          rate: nightRate,
+          isOverride,
+          overrideName,
+          extraPersonRate: nightExtraPersonRate,
+          nightRoomCost,
+          nightExtraCost
+        });
+      }
+    } else {
+      roomBaseCharge = Math.round(standardBaseRate * parsedQty * nights);
+      extraGuestCharge = Math.round(extraGuests * standardExtraPersonRate * nights);
+    }
+
     const totalAmount = Math.round(roomBaseCharge + extraGuestCharge);
+    const avgBaseRate = nights > 0 ? Math.round(roomBaseCharge / (parsedQty * nights)) : standardBaseRate;
 
     return {
       numberOfNights: nights,
       roomQty: parsedQty,
-      baseRate,
+      baseRate: avgBaseRate,
+      standardBaseRate,
       roomBaseCharge,
       adults: parsedAdults,
       childrenUnder4: parsedKidsUnder4,
@@ -669,13 +840,15 @@ export const StorageService = {
       includedGuests,
       chargeableGuests,
       extraGuests,
-      extraPersonRate: config.extra_person_rate || 700,
+      extraPersonRate: standardExtraPersonRate,
       extraGuestCharge,
       totalAmount,
       maxAllowedGuests,
       exceedsMaxCapacity,
       childAgeLimit: config.child_age_free_limit || 4,
-      acStatus: resolvedAcStatus
+      acStatus: resolvedAcStatus,
+      hasSpecialDateRate,
+      nightBreakdowns
     };
   },
 

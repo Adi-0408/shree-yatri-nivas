@@ -12,6 +12,7 @@ export const DEFAULT_PRICING_CONFIG = {
     AC: { total_rooms: 3, active: true },
     "Non-AC": { total_rooms: 2, active: true }
   },
+  date_range_rates: [],
   last_modified_by: "Admin",
   last_modified_at: new Date().toISOString(),
   audit_logs: [
