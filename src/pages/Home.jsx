@@ -147,8 +147,8 @@ export const Home = () => {
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '2rem' }}>
-            <div style={{ padding: '1.75rem', borderRadius: 'var(--radius-lg)', backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-light)' }}>
-              <div style={{ width: '50px', height: '50px', borderRadius: 'var(--radius-md)', backgroundColor: 'var(--primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.25rem' }}>
+            <div className="highlight-card" style={{ padding: '1.75rem', borderRadius: 'var(--radius-lg)', backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-light)' }}>
+              <div className="highlight-icon" style={{ width: '50px', height: '50px', borderRadius: 'var(--radius-md)', backgroundColor: 'var(--primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.25rem' }}>
                 <MapPin size={24} color="var(--primary)" />
               </div>
               <h3 style={{ fontSize: '1.2rem', marginBottom: '0.5rem' }}>400m from Temple</h3>
@@ -157,8 +157,8 @@ export const Home = () => {
               </p>
             </div>
 
-            <div style={{ padding: '1.75rem', borderRadius: 'var(--radius-lg)', backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-light)' }}>
-              <div style={{ width: '50px', height: '50px', borderRadius: 'var(--radius-md)', backgroundColor: 'var(--gold-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.25rem' }}>
+            <div className="highlight-card" style={{ padding: '1.75rem', borderRadius: 'var(--radius-lg)', backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-light)' }}>
+              <div className="highlight-icon" style={{ width: '50px', height: '50px', borderRadius: 'var(--radius-md)', backgroundColor: 'var(--gold-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.25rem' }}>
                 <Droplet size={24} color="var(--gold)" />
               </div>
               <h3 style={{ fontSize: '1.2rem', marginBottom: '0.5rem' }}>24/7 Hot Water & RO</h3>
@@ -167,8 +167,8 @@ export const Home = () => {
               </p>
             </div>
 
-            <div style={{ padding: '1.75rem', borderRadius: 'var(--radius-lg)', backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-light)' }}>
-              <div style={{ width: '50px', height: '50px', borderRadius: 'var(--radius-md)', backgroundColor: 'var(--info-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.25rem' }}>
+            <div className="highlight-card" style={{ padding: '1.75rem', borderRadius: 'var(--radius-lg)', backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-light)' }}>
+              <div className="highlight-icon" style={{ width: '50px', height: '50px', borderRadius: 'var(--radius-md)', backgroundColor: 'var(--info-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.25rem' }}>
                 <ShieldCheck size={24} color="var(--info)" />
               </div>
               <h3 style={{ fontSize: '1.2rem', marginBottom: '0.5rem' }}>Spotless Hygiene</h3>
@@ -177,8 +177,8 @@ export const Home = () => {
               </p>
             </div>
 
-            <div style={{ padding: '1.75rem', borderRadius: 'var(--radius-lg)', backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-light)' }}>
-              <div style={{ width: '50px', height: '50px', borderRadius: 'var(--radius-md)', backgroundColor: 'var(--success-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.25rem' }}>
+            <div className="highlight-card" style={{ padding: '1.75rem', borderRadius: 'var(--radius-lg)', backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-light)' }}>
+              <div className="highlight-icon" style={{ width: '50px', height: '50px', borderRadius: 'var(--radius-md)', backgroundColor: 'var(--success-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.25rem' }}>
                 <Car size={24} color="var(--success)" />
               </div>
               <h3 style={{ fontSize: '1.2rem', marginBottom: '0.5rem' }}>Safe Parking & Wi-Fi</h3>

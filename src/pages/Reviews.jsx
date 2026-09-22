@@ -129,7 +129,7 @@ export const Reviews = () => {
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                 {reviews.map((rev) => (
-                  <div key={rev.id} style={{ backgroundColor: '#FFFFFF', borderRadius: 'var(--radius-md)', padding: '1.75rem', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-xs)' }}>
+                  <div key={rev.id} className="review-card" style={{ backgroundColor: '#FFFFFF', borderRadius: 'var(--radius-md)', padding: '1.75rem', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-xs)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
                       <div>
                         <div style={{ fontWeight: 700, fontSize: '1.1rem' }}>{rev.guest_name}</div>
@@ -219,6 +219,7 @@ export const Reviews = () => {
                         <button
                           type="button"
                           key={star}
+                          className="star-btn"
                           onMouseEnter={() => setHoverRating(star)}
                           onMouseLeave={() => setHoverRating(0)}
                           onClick={() => setRating(star)}
