@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { StorageService } from '../services/storageService';
+import { PricingService } from '../services/pricingService';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { 
@@ -24,7 +25,11 @@ import {
   X, 
   RotateCcw,
   Printer,
-  Sparkles
+  Sparkles,
+  Sliders,
+  Save,
+  History,
+  Info
 } from 'lucide-react';
 
 export const Admin = () => {
@@ -35,7 +40,7 @@ export const Admin = () => {
   const [adminUser, setAdminUser] = useState('');
   const [adminPass, setAdminPass] = useState('');
 
-  // Active Tab: 'dashboard' | 'bookings' | 'rooms' | 'reviews' | 'customers'
+  // Active Tab: 'dashboard' | 'bookings' | 'rooms' | 'pricing' | 'reviews' | 'customers'
   const [activeTab, setActiveTab] = useState('dashboard');
 
   // Data State
@@ -44,6 +49,11 @@ export const Admin = () => {
   const [rooms, setRooms] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [customers, setCustomers] = useState([]);
+
+  // Pricing & Inventory State
+  const [pricingConfig, setPricingConfig] = useState(StorageService.getPricingConfig());
+  const [pricingForm, setPricingForm] = useState(StorageService.getPricingConfig());
+  const [isSavingPricing, setIsSavingPricing] = useState(false);
 
   // Search & Filter state
   const [bookingSearch, setBookingSearch] = useState('');
@@ -70,6 +80,23 @@ export const Admin = () => {
     setRooms(StorageService.getRooms(true));
     setReviews(StorageService.getReviews(true));
     setCustomers(StorageService.getCustomers());
+    const pConfig = StorageService.getPricingConfig();
+    setPricingConfig(pConfig);
+    setPricingForm(pConfig);
+  };
+
+  const handleSavePricing = async (e) => {
+    e.preventDefault();
+    setIsSavingPricing(true);
+    try {
+      await PricingService.savePricingConfig(pricingForm, 'Admin');
+      showSuccess('Pricing and inventory configuration saved successfully! Rates and inventory are instantly synced.');
+      reloadData();
+    } catch (err) {
+      showError(err.message || 'Failed to update pricing settings.');
+    } finally {
+      setIsSavingPricing(false);
+    }
   };
 
   useEffect(() => {
@@ -295,6 +322,12 @@ export const Admin = () => {
             <BedDouble size={18} /> Room Inventory ({rooms.length})
           </button>
           <button
+            onClick={() => setActiveTab('pricing')}
+            className={`admin-nav-item ${activeTab === 'pricing' ? 'active' : ''}`}
+          >
+            <Sliders size={18} /> Pricing & Inventory
+          </button>
+          <button
             onClick={() => setActiveTab('reviews')}
             className={`admin-nav-item ${activeTab === 'reviews' ? 'active' : ''}`}
           >
@@ -510,7 +543,8 @@ export const Admin = () => {
                         <select
                           value={b.payment_status}
                           onChange={(e) => handleUpdatePaymentStatus(b.booking_id, e.target.value)}
-                          style={{ fontSize: '0.75rem', padding: '2px 4px', borderRadius: '4px', marginTop: '4px' }}
+                          className={`table-status-select pay-${b.payment_status?.toLowerCase() || 'pending'}`}
+                          style={{ marginTop: '6px' }}
                         >
                           <option value="Pending">Pending</option>
                           <option value="Paid">Paid</option>
@@ -520,7 +554,7 @@ export const Admin = () => {
                         <select
                           value={b.booking_status}
                           onChange={(e) => handleUpdateBookingStatus(b.booking_id, e.target.value)}
-                          style={{ fontSize: '0.8rem', padding: '4px 6px', borderRadius: '4px', fontWeight: 600 }}
+                          className={`table-status-select status-${b.booking_status?.toLowerCase()?.replace(/\s+/g, '-') || 'confirmed'}`}
                         >
                           <option value="Confirmed">Confirmed</option>
                           <option value="Checked-in">Checked-in</option>
@@ -718,6 +752,316 @@ export const Admin = () => {
                   ))}
                 </tbody>
               </table>
+            </div>
+          </div>
+        )}
+
+        {/* TAB: PRICING & INVENTORY MANAGEMENT */}
+        {activeTab === 'pricing' && (
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+              <div>
+                <h1 style={{ fontSize: '1.8rem', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                  <Sliders size={26} color="var(--primary)" /> Pricing & Inventory Management
+                </h1>
+                <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+                  Full role-based authority to dynamically override room tariffs, extra guest rules, and live property room counts.
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                <span className="badge badge-success" style={{ padding: '0.5rem 0.9rem', fontSize: '0.85rem' }}>
+                  <CheckCircle2 size={15} style={{ marginRight: '5px' }} /> Dynamic Sync Active
+                </span>
+              </div>
+            </div>
+
+            <form onSubmit={handleSavePricing}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+                
+                {/* 1. Room Base Rates */}
+                <div style={{ backgroundColor: '#FFFFFF', borderRadius: 'var(--radius-lg)', padding: '1.75rem', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1.25rem', paddingBottom: '0.75rem', borderBottom: '1px solid var(--border-light)' }}>
+                    <div style={{ width: '38px', height: '38px', borderRadius: 'var(--radius-sm)', backgroundColor: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <DollarSign size={20} />
+                    </div>
+                    <div>
+                      <h3 style={{ fontSize: '1.1rem', color: 'var(--text-main)', margin: 0 }}>Room Base Rates</h3>
+                      <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Tariff per night for up to 2 persons</div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1.15rem' }}>
+                    <div className="form-group">
+                      <label className="form-label" style={{ justifyContent: 'space-between' }}>
+                        <span>AC Room Base Tariff (₹/night)</span>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--gold)', fontWeight: 600 }}>Standard Capacity: 2</span>
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="50"
+                        required
+                        className="form-control"
+                        value={pricingForm.base_rates?.AC || 2400}
+                        onChange={(e) => setPricingForm({
+                          ...pricingForm,
+                          base_rates: { ...pricingForm.base_rates, AC: parseFloat(e.target.value) || 0 }
+                        })}
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label" style={{ justifyContent: 'space-between' }}>
+                        <span>Non-AC Room Base Tariff (₹/night)</span>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--gold)', fontWeight: 600 }}>Standard Capacity: 2</span>
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="50"
+                        required
+                        className="form-control"
+                        value={pricingForm.base_rates?.["Non-AC"] || 1400}
+                        onChange={(e) => setPricingForm({
+                          ...pricingForm,
+                          base_rates: { ...pricingForm.base_rates, "Non-AC": parseFloat(e.target.value) || 0 }
+                        })}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Occupancy & Extra Person Rules */}
+                <div style={{ backgroundColor: '#FFFFFF', borderRadius: 'var(--radius-lg)', padding: '1.75rem', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1.25rem', paddingBottom: '0.75rem', borderBottom: '1px solid var(--border-light)' }}>
+                    <div style={{ width: '38px', height: '38px', borderRadius: 'var(--radius-sm)', backgroundColor: 'var(--gold-light)', color: 'var(--gold)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Users size={20} />
+                    </div>
+                    <div>
+                      <h3 style={{ fontSize: '1.1rem', color: 'var(--text-main)', margin: 0 }}>Extra Guest & Child Policy</h3>
+                      <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Occupancy limits and extra charges</div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1.15rem' }}>
+                    <div className="form-group">
+                      <label className="form-label" style={{ justifyContent: 'space-between' }}>
+                        <span>Extra Person Surcharge (₹/person/night)</span>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 600 }}>Adults / Kids &gt; 4y</span>
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="50"
+                        required
+                        className="form-control"
+                        value={pricingForm.extra_person_rate || 700}
+                        onChange={(e) => setPricingForm({
+                          ...pricingForm,
+                          extra_person_rate: parseFloat(e.target.value) || 0
+                        })}
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label" style={{ justifyContent: 'space-between' }}>
+                        <span>Child Free Age Limit (Years)</span>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--success)', fontWeight: 600 }}>Free of Charge</span>
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="12"
+                        required
+                        className="form-control"
+                        value={pricingForm.child_age_free_limit ?? 4}
+                        onChange={(e) => setPricingForm({
+                          ...pricingForm,
+                          child_age_free_limit: parseInt(e.target.value, 10) || 0
+                        })}
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: '1rem', padding: '0.75rem', backgroundColor: 'var(--bg-primary)', borderRadius: 'var(--radius-sm)', fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <Info size={15} color="var(--primary)" style={{ flexShrink: 0 }} />
+                    <span>Max room occupancy is <strong>4 persons</strong>. Children aged 0–{pricingForm.child_age_free_limit} stay free.</span>
+                  </div>
+                </div>
+
+                {/* 3. Room Inventory & Availability */}
+                <div style={{ backgroundColor: '#FFFFFF', borderRadius: 'var(--radius-lg)', padding: '1.75rem', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1.25rem', paddingBottom: '0.75rem', borderBottom: '1px solid var(--border-light)' }}>
+                    <div style={{ width: '38px', height: '38px', borderRadius: 'var(--radius-sm)', backgroundColor: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <BedDouble size={20} />
+                    </div>
+                    <div>
+                      <h3 style={{ fontSize: '1.1rem', color: 'var(--text-main)', margin: 0 }}>Inventory Configuration</h3>
+                      <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>5 Total Rooms Available</div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1.15rem' }}>
+                    {/* AC Rooms Inventory */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '0.75rem', alignItems: 'flex-end' }}>
+                      <div className="form-group">
+                        <label className="form-label">AC Rooms Count</label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="20"
+                          required
+                          className="form-control"
+                          value={pricingForm.inventory?.AC?.total_rooms ?? 3}
+                          onChange={(e) => setPricingForm({
+                            ...pricingForm,
+                            inventory: {
+                              ...pricingForm.inventory,
+                              AC: {
+                                ...pricingForm.inventory?.AC,
+                                total_rooms: parseInt(e.target.value, 10) || 0
+                              }
+                            }
+                          })}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">AC Status</label>
+                        <select
+                          className="form-control"
+                          value={pricingForm.inventory?.AC?.active !== false ? 'active' : 'inactive'}
+                          onChange={(e) => setPricingForm({
+                            ...pricingForm,
+                            inventory: {
+                              ...pricingForm.inventory,
+                              AC: {
+                                ...pricingForm.inventory?.AC,
+                                active: e.target.value === 'active'
+                              }
+                            }
+                          })}
+                        >
+                          <option value="active">Active (Live)</option>
+                          <option value="inactive">Inactive (Off)</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Non-AC Rooms Inventory */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '0.75rem', alignItems: 'flex-end' }}>
+                      <div className="form-group">
+                        <label className="form-label">Non-AC Rooms Count</label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="20"
+                          required
+                          className="form-control"
+                          value={pricingForm.inventory?.["Non-AC"]?.total_rooms ?? 2}
+                          onChange={(e) => setPricingForm({
+                            ...pricingForm,
+                            inventory: {
+                              ...pricingForm.inventory,
+                              "Non-AC": {
+                                ...pricingForm.inventory?.["Non-AC"],
+                                total_rooms: parseInt(e.target.value, 10) || 0
+                              }
+                            }
+                          })}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Non-AC Status</label>
+                        <select
+                          className="form-control"
+                          value={pricingForm.inventory?.["Non-AC"]?.active !== false ? 'active' : 'inactive'}
+                          onChange={(e) => setPricingForm({
+                            ...pricingForm,
+                            inventory: {
+                              ...pricingForm.inventory,
+                              "Non-AC": {
+                                ...pricingForm.inventory?.["Non-AC"],
+                                active: e.target.value === 'active'
+                              }
+                            }
+                          })}
+                        >
+                          <option value="active">Active (Live)</option>
+                          <option value="inactive">Inactive (Off)</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.65rem 0.85rem', backgroundColor: 'var(--bg-primary)', borderRadius: 'var(--radius-sm)', fontSize: '0.82rem' }}>
+                    <span style={{ fontWeight: 600 }}>Total Property Inventory:</span>
+                    <strong style={{ color: 'var(--primary)', fontSize: '1rem' }}>
+                      {(pricingForm.inventory?.AC?.total_rooms || 0) + (pricingForm.inventory?.["Non-AC"]?.total_rooms || 0)} Rooms
+                    </strong>
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Save Button Action */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#FFFFFF', padding: '1.5rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-gold)', boxShadow: 'var(--shadow-md)', marginBottom: '2.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: '1.05rem', color: 'var(--text-main)' }}>Save &amp; Broadcast Pricing Updates</div>
+                  <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                    Changes immediately reflect on user booking calculation, invoices, and room cards.
+                  </div>
+                </div>
+                <button
+                  type="submit"
+                  disabled={isSavingPricing}
+                  className="btn btn-primary btn-lg"
+                  style={{ minWidth: '220px', justifyContent: 'center' }}
+                >
+                  <Save size={18} />
+                  <span>{isSavingPricing ? 'Saving Settings...' : 'Save Pricing Settings'}</span>
+                </button>
+              </div>
+            </form>
+
+            {/* 4. Pricing Audit Logs */}
+            <div style={{ backgroundColor: '#FFFFFF', borderRadius: 'var(--radius-lg)', padding: '1.75rem', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1.25rem', paddingBottom: '0.75rem', borderBottom: '1px solid var(--border-light)' }}>
+                <History size={20} color="var(--primary)" />
+                <div>
+                  <h3 style={{ fontSize: '1.1rem', color: 'var(--text-main)', margin: 0 }}>Pricing &amp; Inventory Audit Logs</h3>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Traceability record of who modified tariffs and inventory</div>
+                </div>
+              </div>
+
+              <div className="table-responsive">
+                <table className="syn-table">
+                  <thead>
+                    <tr>
+                      <th>Timestamp</th>
+                      <th>Admin User</th>
+                      <th>Changes &amp; Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(pricingConfig.audit_logs || []).map((log) => (
+                      <tr key={log.id || log.timestamp}>
+                        <td style={{ whiteSpace: 'nowrap', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                          {new Date(log.timestamp).toLocaleString('en-IN')}
+                        </td>
+                        <td>
+                          <span className="badge badge-primary" style={{ fontSize: '0.78rem' }}>
+                            <User size={12} style={{ marginRight: '4px' }} /> {log.modified_by || 'Admin'}
+                          </span>
+                        </td>
+                        <td style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-main)' }}>
+                          {log.action}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}

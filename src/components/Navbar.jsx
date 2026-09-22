@@ -90,45 +90,33 @@ export const Navbar = () => {
               </button>
 
               {dropdownOpen && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: '110%',
-                    right: 0,
-                    width: '200px',
-                    backgroundColor: '#FFFFFF',
-                    borderRadius: 'var(--radius-md)',
-                    boxShadow: 'var(--shadow-lg)',
-                    border: '1px solid var(--border-light)',
-                    padding: '0.5rem',
-                    zIndex: 200,
-                    animation: 'fadeIn 0.15s ease'
-                  }}
-                >
-                  <div style={{ padding: '0.5rem 0.75rem', borderBottom: '1px solid var(--border-light)' }}>
-                    <div style={{ fontWeight: 700, fontSize: '0.85rem' }}>{customer.name}</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{customer.mobile}</div>
+                <div className="syn-dropdown-menu">
+                  <div className="syn-dropdown-header">
+                    <div className="syn-dropdown-name">{customer.name}</div>
+                    <div className="syn-dropdown-sub">{customer.mobile}</div>
                   </div>
-                  <button
-                    onClick={() => {
-                      setDropdownOpen(false);
-                      navigate('/booking');
-                    }}
-                    className="btn btn-sm"
-                    style={{ width: '100%', justifyContent: 'flex-start', padding: '0.5rem 0.75rem', fontSize: '0.85rem' }}
-                  >
-                    <CalendarCheck size={15} style={{ marginRight: '6px' }} /> My Bookings
-                  </button>
-                  <button
-                    onClick={() => {
-                      setDropdownOpen(false);
-                      logoutCustomer();
-                    }}
-                    className="btn btn-sm"
-                    style={{ width: '100%', justifyContent: 'flex-start', padding: '0.5rem 0.75rem', fontSize: '0.85rem', color: 'var(--danger)' }}
-                  >
-                    <LogOut size={15} style={{ marginRight: '6px' }} /> Sign Out
-                  </button>
+                  <div className="syn-dropdown-body">
+                    <button
+                      onClick={() => {
+                        setDropdownOpen(false);
+                        navigate('/booking');
+                      }}
+                      className="syn-dropdown-item"
+                    >
+                      <CalendarCheck size={16} color="var(--primary)" />
+                      <span>My Bookings</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setDropdownOpen(false);
+                        logoutCustomer();
+                      }}
+                      className="syn-dropdown-item syn-dropdown-item-danger"
+                    >
+                      <LogOut size={16} />
+                      <span>Sign Out</span>
+                    </button>
+                  </div>
                 </div>
               )}
             </div>

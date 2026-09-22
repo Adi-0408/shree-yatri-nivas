@@ -1,20 +1,46 @@
 // SHREE YATRI NIVAS - Default Seed Data
+export const DEFAULT_PRICING_CONFIG = {
+  base_rates: {
+    AC: 2400,
+    "Non-AC": 1400
+  },
+  extra_person_rate: 700,
+  child_age_free_limit: 4, // 0 to 4 years free of charge
+  base_capacity_per_room: 2, // Standard tariff covers up to 2 persons
+  max_capacity_per_room: 4, // Maximum 4 persons per room
+  inventory: {
+    AC: { total_rooms: 3, active: true },
+    "Non-AC": { total_rooms: 2, active: true }
+  },
+  last_modified_by: "Admin",
+  last_modified_at: new Date().toISOString(),
+  audit_logs: [
+    {
+      id: "LOG-INIT",
+      timestamp: new Date().toISOString(),
+      modified_by: "Admin",
+      action: "Initial Setup: 3 AC (₹2400), 2 Non-AC (₹1400), Extra Person ₹700, Child Free ≤ 4 yrs"
+    }
+  ]
+};
+
 export const DEFAULT_ROOMS = [
   {
-    room_id: "SYN-RM-101",
-    room_name: "Deluxe AC Family Suite",
-    room_type: "Family Suite",
+    room_id: "SYN-RM-AC",
+    room_name: "Deluxe AC Room",
+    room_type: "AC Room",
     ac_status: "AC",
-    price: 3200,
+    price: 2400,
+    base_capacity: 2,
     capacity: 4,
-    total_quantity: 5,
-    available_quantity: 4,
+    total_quantity: 3,
+    available_quantity: 3,
     status: "active",
-    badge: "Most Popular",
+    badge: "Guest Favourite",
     rating: 4.9,
-    reviews_count: 38,
-    description: "Spacious luxury suite crafted for families and groups visiting the holy pilgrimage. Features 2 king-sized beds, modern air conditioning, premium wooden furnishing, ambient warm lighting, and a panoramic temple and river view.",
-    amenities: ["Air Conditioning", "Free High-Speed Wi-Fi", "Hot Water Geyser (24/7)", "LED Smart TV", "Room Service", "Daily Housekeeping", "Complimentary Water", "Electric Kettle & Tea Kit"],
+    reviews_count: 48,
+    description: "Serene, air-conditioned room crafted for couples and families visiting the holy shrine. Features a plush double bed, silent inverter AC, free high-speed Wi-Fi, and 24/7 hot water. Standard tariff covers up to 2 persons (max 4 with extra person charges).",
+    amenities: ["Inverter Air Conditioning", "Free High-Speed Wi-Fi", "Hot Water Geyser (24/7)", "LED Smart TV", "Room Service", "Daily Housekeeping", "Complimentary Water"],
     images: [
       "https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1200&q=80",
       "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80",
@@ -22,84 +48,24 @@ export const DEFAULT_ROOMS = [
     ]
   },
   {
-    room_id: "SYN-RM-102",
-    room_name: "Executive AC Double Room",
-    room_type: "Executive Double",
-    ac_status: "AC",
-    price: 2200,
-    capacity: 2,
-    total_quantity: 8,
-    available_quantity: 7,
-    status: "active",
-    badge: "Recommended",
-    rating: 4.8,
-    reviews_count: 54,
-    description: "Elegantly designed modern double room ideal for couples, pilgrims, and business travelers. Offers superior comfort with plush bedding, silent AC, high-speed Wi-Fi, work desk, and spotless private bathroom.",
-    amenities: ["Air Conditioning", "Free High-Speed Wi-Fi", "24/7 Hot Water", "Flat Screen TV", "Room Service", "Luggage Storage", "Clean Linens & Towels"],
-    images: [
-      "https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=1200&q=80",
-      "https://images.unsplash.com/photo-1591088398332-8a7791972843?auto=format&fit=crop&w=1200&q=80",
-      "https://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&fit=crop&w=1200&q=80"
-    ]
-  },
-  {
-    room_id: "SYN-RM-103",
-    room_name: "Classic Non-AC Double Room",
-    room_type: "Standard Double",
+    room_id: "SYN-RM-NONAC",
+    room_name: "Classic Non-AC Room",
+    room_type: "Non-AC Room",
     ac_status: "Non-AC",
     price: 1400,
-    capacity: 2,
-    total_quantity: 10,
-    available_quantity: 9,
+    base_capacity: 2,
+    capacity: 4,
+    total_quantity: 2,
+    available_quantity: 2,
     status: "active",
     badge: "Budget Friendly",
-    rating: 4.6,
-    reviews_count: 29,
-    description: "Affordable and peaceful accommodation with natural ventilation, high ceiling fan, comfortable double bed, pristine sanitation, and round-the-clock hot water. Perfect for budget-conscious pilgrims.",
+    rating: 4.7,
+    reviews_count: 35,
+    description: "Peaceful, naturally ventilated room with high ceiling fan, comfortable double bed, and sparkling clean private bathroom. Ideal for budget-conscious pilgrims. Standard tariff covers up to 2 persons (max 4 with extra person charges).",
     amenities: ["High-speed Ceiling Fan", "Free Wi-Fi", "24/7 Hot Water", "Attached Bathroom", "Daily Housekeeping", "Filtered Drinking Water"],
     images: [
       "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1200&q=80",
       "https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?auto=format&fit=crop&w=1200&q=80"
-    ]
-  },
-  {
-    room_id: "SYN-RM-104",
-    room_name: "Royal 4-Bed AC Suite",
-    room_type: "Royal Suite",
-    ac_status: "AC",
-    price: 3900,
-    capacity: 5,
-    total_quantity: 4,
-    available_quantity: 3,
-    status: "active",
-    badge: "Luxury Group Stay",
-    rating: 4.95,
-    reviews_count: 22,
-    description: "Our largest and most luxurious family suite featuring lavish interiors, sofa seating lounge, double air-conditioning units, 4 separate deluxe beds or 2 king suites, spacious vanity bathroom, and premium hospitality perks.",
-    amenities: ["Dual AC Units", "Ultra High-Speed Wi-Fi", "24/7 Solar & Geyser Hot Water", "55-inch Smart TV", "Sofa Seating Lounge", "Mini Fridge", "Complimentary Tea & Coffee", "Dedicated Room Attendant"],
-    images: [
-      "https://images.unsplash.com/photo-1578683010236-d716f9a3f461?auto=format&fit=crop&w=1200&q=80",
-      "https://images.unsplash.com/photo-1611892440504-42a792e24d32?auto=format&fit=crop&w=1200&q=80"
-    ]
-  },
-  {
-    room_id: "SYN-RM-105",
-    room_name: "Standard Non-AC Triple Room",
-    room_type: "Triple Room",
-    ac_status: "Non-AC",
-    price: 1800,
-    capacity: 3,
-    total_quantity: 6,
-    available_quantity: 5,
-    status: "active",
-    badge: "Value Stay",
-    rating: 4.7,
-    reviews_count: 17,
-    description: "Designed for small pilgrim groups or families of 3. Features one double bed and one single bed, large windows for refreshing cross-ventilation, spotless linens, and round-the-clock water support.",
-    amenities: ["Ceiling Fans", "Free Wi-Fi", "24/7 Hot Water", "Attached Bathroom", "Drinking Water on Call", "Luggage Rack"],
-    images: [
-      "https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?auto=format&fit=crop&w=1200&q=80",
-      "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1200&q=80"
     ]
   }
 ];
@@ -115,13 +81,18 @@ export const DEFAULT_BOOKINGS = [
     check_out: "2026-09-24",
     adults: 2,
     children: 1,
-    room_id: "SYN-RM-102",
-    room_name: "Executive AC Double Room",
-    room_type: "Executive Double",
+    children_under_4: 1,
+    children_above_4: 0,
+    extra_guests: 0,
+    room_id: "SYN-RM-AC",
+    room_name: "Deluxe AC Room",
+    room_type: "AC Room",
     room_quantity: 1,
-    room_rate: 2200,
+    room_rate: 2400,
     number_of_nights: 2,
-    total_amount: 4400,
+    base_charges: 4800,
+    extra_charges: 0,
+    total_amount: 4800,
     payment_method: "Pay at Property",
     payment_status: "Pending",
     booking_status: "Confirmed",
@@ -136,19 +107,24 @@ export const DEFAULT_BOOKINGS = [
     email: "sunita.deshmukh@gmail.com",
     check_in: "2026-09-21",
     check_out: "2026-09-23",
-    adults: 4,
+    adults: 3,
     children: 0,
-    room_id: "SYN-RM-101",
-    room_name: "Deluxe AC Family Suite",
-    room_type: "Family Suite",
+    children_under_4: 0,
+    children_above_4: 0,
+    extra_guests: 1,
+    room_id: "SYN-RM-NONAC",
+    room_name: "Classic Non-AC Room",
+    room_type: "Non-AC Room",
     room_quantity: 1,
-    room_rate: 3200,
+    room_rate: 1400,
     number_of_nights: 2,
-    total_amount: 6400,
+    base_charges: 2800,
+    extra_charges: 1400,
+    total_amount: 4200,
     payment_method: "Pay at Property",
     payment_status: "Paid",
     booking_status: "Checked-in",
-    special_requests: "Please provide extra pillows.",
+    special_requests: "Please provide extra bed linens.",
     created_at: "2026-09-20T14:15:00Z"
   }
 ];

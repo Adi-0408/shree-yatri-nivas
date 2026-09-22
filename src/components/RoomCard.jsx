@@ -38,13 +38,15 @@ export const RoomCard = ({ room, onOpenDetails }) => {
       <div className="room-card-body">
         <h3 className="room-card-title">{room.room_name}</h3>
         
-        <div className="room-card-meta">
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-            <Users size={15} color="var(--primary)" /> Up to {room.capacity} Guests
+        <div className="room-card-meta" style={{ flexWrap: 'wrap', gap: '0.5rem' }}>
+          <span className="badge badge-primary" style={{ fontSize: '0.72rem', padding: '0.2rem 0.6rem' }}>
+            Standard: 2 Persons
           </span>
-          <span>•</span>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#B87C2B', fontWeight: 700 }}>
-            <Star size={15} fill="#B87C2B" color="#B87C2B" /> {room.rating || 4.8} ({room.reviews_count || 24})
+          <span className="badge badge-gold" style={{ fontSize: '0.72rem', padding: '0.2rem 0.6rem' }}>
+            Max: 4 Persons
+          </span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#B87C2B', fontWeight: 700, marginLeft: 'auto', fontSize: '0.82rem' }}>
+            <Star size={14} fill="#B87C2B" color="#B87C2B" /> {room.rating || 4.8} ({room.reviews_count || 24})
           </span>
         </div>
 
@@ -64,10 +66,15 @@ export const RoomCard = ({ room, onOpenDetails }) => {
           )}
         </div>
 
+        {/* Transparent Pricing Policy Note */}
+        <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', backgroundColor: 'var(--bg-primary)', padding: '0.45rem 0.65rem', borderRadius: 'var(--radius-sm)', marginBottom: '0.75rem', lineHeight: '1.4' }}>
+          • Extra adult/child above 4y: <strong>₹700/night</strong>. Children 4 &amp; under stay <strong>free</strong>.
+        </div>
+
         <div className="room-card-footer">
           <div>
             <div className="room-price-val">₹{room.price.toLocaleString('en-IN')}</div>
-            <div className="room-price-unit">per night (taxes incl.)</div>
+            <div className="room-price-unit">per night (for up to 2 guests)</div>
           </div>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <button

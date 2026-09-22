@@ -654,6 +654,7 @@ h1, h2, h3, h4, h5, h6 {
   border-radius: var(--radius-md);
   background-color: var(--bg-surface);
   color: var(--text-main);
+  font-family: var(--font-sans);
   font-size: 0.95rem;
   transition: all var(--transition-normal);
 }
@@ -663,6 +664,248 @@ h1, h2, h3, h4, h5, h6 {
   border-color: var(--primary);
   box-shadow: 0 0 0 4px var(--primary-glow), 0 2px 8px rgba(142, 50, 0, 0.08);
   transform: translateY(-1px);
+}
+
+/* ==========================================================================
+   Theme-Matched Custom Dropdown Lists & Select Controls
+   ========================================================================== */
+
+/* Universal & Form-Control Select Dropdowns */
+select,
+select.form-control,
+.syn-select {
+  width: 100%;
+  padding: 0.8rem 2.85rem 0.8rem 1.15rem;
+  border: 1.5px solid var(--border-light);
+  border-radius: var(--radius-md);
+  background-color: var(--bg-surface);
+  color: var(--text-main);
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  font-weight: 500;
+  line-height: 1.5;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23C58940' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: calc(100% - 1.15rem) center;
+  background-size: 16px;
+  box-shadow: var(--shadow-xs);
+  transition: border-color var(--transition-normal),
+              box-shadow var(--transition-normal),
+              background-color var(--transition-normal),
+              background-image var(--transition-fast),
+              transform var(--transition-fast);
+}
+
+/* Hover State */
+select:hover:not(:disabled),
+select.form-control:hover:not(:disabled),
+.syn-select:hover:not(:disabled) {
+  border-color: var(--gold);
+  background-color: #FFFFFF;
+  box-shadow: 0 4px 14px rgba(197, 137, 64, 0.12);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238E3200' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+}
+
+/* Focus State */
+select:focus,
+select.form-control:focus,
+.syn-select:focus {
+  outline: none;
+  border-color: var(--primary);
+  background-color: #FFFFFF;
+  box-shadow: 0 0 0 4px var(--primary-glow), 0 6px 18px rgba(142, 50, 0, 0.12);
+  transform: translateY(-1px);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238E3200' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+}
+
+/* Disabled State */
+select:disabled,
+select.form-control:disabled,
+.syn-select:disabled {
+  background-color: var(--bg-subtle);
+  border-color: var(--border-light);
+  color: var(--text-muted);
+  cursor: not-allowed;
+  opacity: 0.65;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238C827A' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+}
+
+/* Dropdown Option Items & Groups */
+select option,
+select optgroup {
+  background-color: #FFFFFF;
+  color: var(--text-main);
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  font-weight: 500;
+  padding: 0.75rem 1rem;
+}
+
+select option:checked {
+  background-color: var(--primary-light) !important;
+  color: var(--primary) !important;
+  font-weight: 600;
+}
+
+/* Filter Bar Compact Selects (Rooms Page, Admin Filter, etc.) */
+.filter-select {
+  min-height: 44px;
+  font-size: 0.9rem;
+  padding-top: 0.6rem;
+  padding-bottom: 0.6rem;
+}
+
+/* Table Badge Selects (Admin Table: Status & Payment) */
+.table-status-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.35rem 1.75rem 0.35rem 0.75rem;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all var(--transition-fast);
+  background-repeat: no-repeat;
+  background-position: calc(100% - 0.55rem) center;
+  background-size: 11px;
+}
+
+.table-status-select:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(197, 137, 64, 0.25);
+}
+
+.table-status-select.status-confirmed {
+  background-color: #ECFDF5;
+  color: #065F46;
+  border-color: #A7F3D0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23065F46' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+}
+
+.table-status-select.status-checked-in {
+  background-color: #EFF6FF;
+  color: #1E40AF;
+  border-color: #BFDBFE;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%231E40AF' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+}
+
+.table-status-select.status-checked-out {
+  background-color: #F5F3FF;
+  color: #5B21B6;
+  border-color: #DDD6FE;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235B21B6' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+}
+
+.table-status-select.status-cancelled {
+  background-color: #FEF2F2;
+  color: #991B1B;
+  border-color: #FECACA;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23991B1B' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+}
+
+.table-status-select.pay-paid {
+  background-color: #F0FDF4;
+  color: #166534;
+  border-color: #BBF7D0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23166534' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+}
+
+.table-status-select.pay-pending {
+  background-color: #FFFBEB;
+  color: #92400E;
+  border-color: #FDE68A;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2392400E' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+}
+
+/* Navbar User Dropdown Menu */
+.syn-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 220px;
+  background: #FFFFFF;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-gold);
+  box-shadow: 0 16px 36px rgba(44, 32, 20, 0.14), 0 2px 8px rgba(44, 32, 20, 0.05);
+  overflow: hidden;
+  z-index: 250;
+  animation: synDropdownFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: top right;
+}
+
+@keyframes synDropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.syn-dropdown-header {
+  padding: 0.85rem 1rem;
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.syn-dropdown-name {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.syn-dropdown-sub {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.syn-dropdown-body {
+  padding: 0.4rem;
+}
+
+.syn-dropdown-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.65rem 0.85rem;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-align: left;
+}
+
+.syn-dropdown-item:hover {
+  background-color: var(--gold-light);
+  color: var(--primary);
+  transform: translateX(2px);
+}
+
+.syn-dropdown-item-danger {
+  color: var(--danger);
+}
+
+.syn-dropdown-item-danger:hover {
+  background-color: var(--danger-bg);
+  color: var(--danger);
 }
 
 /* ==========================================================================

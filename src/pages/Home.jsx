@@ -43,6 +43,12 @@ export const Home = () => {
     StorageService.init();
     setRooms(StorageService.getRooms());
     setReviews(StorageService.getReviews().slice(0, 3));
+
+    const handleSync = () => {
+      setRooms(StorageService.getRooms());
+    };
+    window.addEventListener('syn_pricing_updated', handleSync);
+    return () => window.removeEventListener('syn_pricing_updated', handleSync);
   }, []);
 
   const handleSearchSubmit = (e) => {

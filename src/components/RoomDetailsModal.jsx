@@ -104,23 +104,29 @@ export const RoomDetailsModal = ({ room, onClose }) => {
           </div>
 
           {/* Quick Specifications */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '1rem', marginBottom: '1.5rem', backgroundColor: 'var(--bg-subtle)', padding: '1rem', borderRadius: 'var(--radius-md)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.85rem', marginBottom: '1.5rem', backgroundColor: 'var(--bg-subtle)', padding: '1rem', borderRadius: 'var(--radius-md)' }}>
             <div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>MAX OCCUPANCY</div>
-              <div style={{ fontWeight: 700, fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <Users size={16} color="var(--primary)" /> {room.capacity} Guests
+              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600 }}>BASE CAPACITY</div>
+              <div style={{ fontWeight: 700, fontSize: '0.92rem', display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--text-main)' }}>
+                <Users size={15} color="var(--primary)" /> 2 Included
               </div>
             </div>
             <div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>NIGHTLY TARIFF</div>
-              <div style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--primary)' }}>
+              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600 }}>MAX CAPACITY</div>
+              <div style={{ fontWeight: 700, fontSize: '0.92rem', display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--gold)' }}>
+                <Users size={15} color="var(--gold)" /> 4 Persons
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600 }}>STANDARD TARIFF</div>
+              <div style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--primary)' }}>
                 ₹{room.price.toLocaleString('en-IN')}
               </div>
             </div>
             <div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>RATING & REVIEWS</div>
-              <div style={{ fontWeight: 700, fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '4px', color: '#B87C2B' }}>
-                <Star size={16} fill="#B87C2B" /> {room.rating || 4.8} / 5.0
+              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600 }}>EXTRA GUEST</div>
+              <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--text-main)' }}>
+                ₹700/night
               </div>
             </div>
           </div>

@@ -32,6 +32,12 @@ export const Rooms = () => {
   useEffect(() => {
     StorageService.init();
     setRooms(StorageService.getRooms());
+
+    const handleSync = () => {
+      setRooms(StorageService.getRooms());
+    };
+    window.addEventListener('syn_pricing_updated', handleSync);
+    return () => window.removeEventListener('syn_pricing_updated', handleSync);
   }, []);
 
   // Filtered rooms

@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rooms & Suites — Shree Yatri Nivas</title>
+  <meta name="description" content="Thoughtfully kept rooms, clear rates, and peaceful AC & Non-AC suites at Shree Yatri Nivas.">
+  
+  <!-- Google Fonts & Font Awesome Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <header class="navbar-wrapper">
+    <div class="container">
+      <nav class="navbar">
+        <a href="index.html" class="nav-brand">
+          <div class="brand-icon"><i class="fa-solid fa-om"></i></div>
+          <div class="brand-text">
+            <span class="brand-title">Shree Yatri Nivas</span>
+            <span class="brand-subtitle">Stay with ease</span>
+          </div>
+        </a>
+
+        <ul class="nav-links">
+          <li><a href="index.html" class="nav-link">Home</a></li>
+          <li><a href="rooms.html" class="nav-link active">Rooms</a></li>
+          <li><a href="index.html#philosophy" class="nav-link">Philosophy</a></li>
+          <li><a href="index.html#amenities" class="nav-link">Amenities</a></li>
+          <li><a href="reviews.html" class="nav-link">Reviews</a></li>
+          <li><a href="contact.html" class="nav-link">Contact</a></li>
+          <li class="nav-actions-mobile">
+            <a href="admin.html" class="admin-link-btn" style="justify-content:center;"><i class="fa-solid fa-lock"></i> Staff Portal</a>
+            <a href="booking.html" class="nav-cta-btn" style="justify-content:center;"><i class="fa-solid fa-calendar-check"></i> Book your stay</a>
+          </li>
+        </ul>
+
+        <div class="nav-actions">
+          <a href="admin.html" class="admin-link-btn" title="Staff Portal"><i class="fa-solid fa-lock"></i> Staff</a>
+          <a href="booking.html" class="nav-cta-btn">Book your stay <i class="fa-solid fa-arrow-right" style="font-size:0.75rem;"></i></a>
+        </div>
+
+        <button class="mobile-menu-toggle" aria-label="Toggle Navigation Menu">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Page Header Banner -->
+  <section style="background: var(--paper); padding: 135px 0 55px 0; text-align: center; border-bottom: 1px solid var(--line);">
+    <div class="container">
+      <span class="section-tag">Accommodations</span>
+      <h1 class="heading-serif" style="font-size: 3.5rem; margin-bottom: 0.85rem;">Thoughtfully Kept Rooms</h1>
+      <p style="color: var(--muted); max-width: 680px; margin: 0 auto; font-size: 1.15rem; line-height: 1.65; font-family: var(--font-serif); font-style: italic;">
+        Simple, considered spaces with the comforts that make a difference between journeys.
+      </p>
+    </div>
+  </section>
+
+  <!-- Main Content & Filters -->
+  <section class="section section-bg-paper">
+    <div class="container">
+      
+      <!-- Date Check & Filters Card -->
+      <div style="background:#ffffff; border-radius: var(--radius-xl); border:1px solid var(--line); box-shadow: var(--shadow-sm); padding:1.5rem 1.75rem; margin-bottom: 3.5rem;">
+        <form id="availability-search-form" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)) auto; gap: 1rem; align-items: flex-end;">
+          <div class="form-group" style="margin:0;">
+            <label class="form-label" style="font-size:0.72rem; text-transform:uppercase; color:var(--subtle); letter-spacing:0.05em;">
+              <i class="fa-regular fa-calendar" style="color:var(--gold);"></i> Check-in Date
+            </label>
+            <input type="date" name="check_in" id="check_in" class="form-control" style="padding:0.6rem 0.85rem; font-size:0.9rem;">
+          </div>
+
+          <div class="form-group" style="margin:0;">
+            <label class="form-label" style="font-size:0.72rem; text-transform:uppercase; color:var(--subtle); letter-spacing:0.05em;">
+              <i class="fa-regular fa-calendar-check" style="color:var(--gold);"></i> Check-out Date
+            </label>
+            <input type="date" name="check_out" id="check_out" class="form-control" style="padding:0.6rem 0.85rem; font-size:0.9rem;">
+          </div>
+
+          <div class="form-group" style="margin:0;">
+            <label class="form-label" style="font-size:0.72rem; text-transform:uppercase; color:var(--subtle); letter-spacing:0.05em;">
+              <i class="fa-solid fa-snowflake" style="color:var(--gold);"></i> Climate
+            </label>
+            <select id="filter-ac" class="form-control" style="padding:0.6rem 0.85rem; font-size:0.9rem;">
+              <option value="all">All (AC & Non-AC)</option>
+              <option value="AC">AC Only</option>
+              <option value="Non-AC">Non-AC Only</option>
+            </select>
+          </div>
+
+          <div class="form-group" style="margin:0;">
+            <label class="form-label" style="font-size:0.72rem; text-transform:uppercase; color:var(--subtle); letter-spacing:0.05em;">
+              <i class="fa-solid fa-user-group" style="color:var(--gold);"></i> Min Capacity
+            </label>
+            <select id="filter-capacity" class="form-control" style="padding:0.6rem 0.85rem; font-size:0.9rem;">
+              <option value="0">Any Capacity</option>
+              <option value="2">2+ Guests</option>
+              <option value="3">3+ Guests</option>
+              <option value="4">4+ Guests</option>
+            </select>
+          </div>
+
+          <div class="form-group" style="margin:0;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:0.25rem;">
+              <label class="form-label" style="font-size:0.72rem; text-transform:uppercase; color:var(--subtle); letter-spacing:0.05em;">Max Budget</label>
+              <span id="price-display" style="font-size:0.85rem; font-weight:700; color:var(--ink);">₹5,000</span>
+            </div>
+            <input type="range" id="filter-price" min="1000" max="6000" step="200" value="5000" style="width:100%; accent-color:var(--ink); cursor:pointer;">
+          </div>
+
+          <div style="display:flex; gap:0.5rem;">
+            <button type="submit" class="btn btn-primary" style="padding:0.65rem 1.25rem; font-size:0.88rem; white-space:nowrap;">
+              <i class="fa-solid fa-magnifying-glass"></i> Check Dates
+            </button>
+            <button type="button" class="btn btn-outline" style="padding:0.65rem 0.9rem;" onclick="resetRoomFilters()" title="Reset Filters">
+              <i class="fa-solid fa-arrow-rotate-left"></i>
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Rooms Catalog Grid -->
+      <div id="rooms-container" class="rooms-grid">
+        <!-- Loaded dynamically from rooms.js -->
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div>
+          <div class="footer-brand-title">Shree Yatri Nivas</div>
+          <p class="footer-desc">
+            Thoughtfully kept rooms, a warm welcome, and the calm you need between journeys. Located in the sacred town of Pandharpur, Maharashtra.
+          </p>
+        </div>
+
+        <div>
+          <h4 class="footer-heading">Quick Links</h4>
+          <ul class="footer-links">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="rooms.html">Rooms & Suites</a></li>
+            <li><a href="index.html#philosophy">Philosophy</a></li>
+            <li><a href="index.html#amenities">Small Comforts</a></li>
+            <li><a href="reviews.html">Guest Reviews</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="footer-heading">Policies</h4>
+          <ul class="footer-links">
+            <li><a href="index.html#amenities">Child Policy (< 4 Free)</a></li>
+            <li><a href="index.html#amenities">Pay at Property</a></li>
+            <li><a href="index.html#amenities">Non-Refundable Policy</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="footer-heading">Contact & Location</h4>
+          <p style="color: #a3a29e; font-size: 0.88rem; line-height: 1.6; margin-bottom: 0.75rem;">
+            <i class="fa-solid fa-location-dot" style="color:var(--gold); margin-right:6px;"></i> Near Vitthal Mandir, Pandharpur
+          </p>
+          <p style="color: #a3a29e; font-size: 0.88rem; margin-bottom: 1rem;">
+            <i class="fa-solid fa-phone" style="color:var(--gold); margin-right:6px;"></i> +91 98220 12345
+          </p>
+          <a href="admin.html" style="font-size:0.8rem; color:#858481; display:inline-flex; align-items:center; gap:4px;">
+            <i class="fa-solid fa-lock"></i> Staff Administration Portal
+          </a>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div>&copy; 2026 Shree Yatri Nivas. All Rights Reserved. Stay with ease.</div>
+        <div>Zero Advance Payment &bull; Pay at Property</div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="js/data.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/main.js"></script>
+  <script src="js/rooms.js"></script>
+</body>
+</html>

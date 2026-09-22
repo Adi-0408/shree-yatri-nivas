@@ -42,12 +42,14 @@ export const Booking = () => {
   tomorrow.setDate(tomorrow.getDate() + 1);
   const tomorrowStr = tomorrow.toISOString().split('T')[0];
 
-  const [selectedRoomId, setSelectedRoomId] = useState(searchParams.get('roomId') || 'SYN-RM-101');
+  const [selectedRoomId, setSelectedRoomId] = useState(searchParams.get('roomId') || 'SYN-RM-AC');
   const [checkIn, setCheckIn] = useState(todayStr);
   const [checkOut, setCheckOut] = useState(tomorrowStr);
   const [roomQty, setRoomQty] = useState(1);
   const [adults, setAdults] = useState(2);
-  const [children, setChildren] = useState(0);
+  const [childrenUnder4, setChildrenUnder4] = useState(0);
+  const [childrenAbove4, setChildrenAbove4] = useState(0);
+  const [pricingConfig, setPricingConfig] = useState(StorageService.getPricingConfig());
 
   // Form State - Step 2 (Guest Details)
   const [guestName, setGuestName] = useState('');
@@ -69,6 +71,7 @@ export const Booking = () => {
     StorageService.init();
     const loadedRooms = StorageService.getRooms();
     setRooms(loadedRooms);
+    setPricingConfig(StorageService.getPricingConfig());
     
     // Check if valid roomId passed in URL
     const urlRoomId = searchParams.get('roomId');
@@ -77,6 +80,13 @@ export const Booking = () => {
     } else if (loadedRooms.length > 0 && !selectedRoomId) {
       setSelectedRoomId(loadedRooms[0].room_id);
     }
+
+    const handlePricingSync = (e) => {
+      setPricingConfig(e.detail || StorageService.getPricingConfig());
+      setRooms(StorageService.getRooms());
+    };
+    window.addEventListener('syn_pricing_updated', handlePricingSync);
+    return () => window.removeEventListener('syn_pricing_updated', handlePricingSync);
   }, [searchParams]);
 
   // Autofill customer data if logged in
@@ -94,21 +104,22 @@ export const Booking = () => {
     return rooms.find((r) => r.room_id === selectedRoomId) || rooms[0] || null;
   }, [rooms, selectedRoomId]);
 
-  // Calculate nights
-  const numberOfNights = useMemo(() => {
-    if (!checkIn || !checkOut) return 1;
-    const start = new Date(checkIn);
-    const end = new Date(checkOut);
-    const diffTime = end.getTime() - start.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays > 0 ? diffDays : 1;
-  }, [checkIn, checkOut]);
+  // Dynamic Pricing & Occupancy Breakdown
+  const priceBreakdown = useMemo(() => {
+    return StorageService.calculateBookingCost({
+      roomId: selectedRoomId,
+      acStatus: selectedRoom?.ac_status || 'AC',
+      checkIn,
+      checkOut,
+      roomQty,
+      adults,
+      childrenUnder4,
+      childrenAbove4
+    });
+  }, [selectedRoomId, selectedRoom, checkIn, checkOut, roomQty, adults, childrenUnder4, childrenAbove4, pricingConfig]);
 
-  // Calculate pricing
-  const totalAmount = useMemo(() => {
-    if (!selectedRoom) return 0;
-    return selectedRoom.price * roomQty * numberOfNights;
-  }, [selectedRoom, roomQty, numberOfNights]);
+  const numberOfNights = priceBreakdown.numberOfNights;
+  const totalAmount = priceBreakdown.totalAmount;
 
   // Overlap availability check
   const availability = useMemo(() => {
@@ -125,6 +136,10 @@ export const Booking = () => {
     }
     if (new Date(checkOut) <= new Date(checkIn)) {
       showError('Check-out date must be after check-in date.');
+      return;
+    }
+    if (priceBreakdown.exceedsMaxCapacity) {
+      showError(`Occupancy limit exceeded: Maximum 4 persons allowed per room (${priceBreakdown.maxAllowedGuests} guests for ${roomQty} room(s)). Please add another room.`);
       return;
     }
     if (!availability.available) {
@@ -155,15 +170,23 @@ export const Booking = () => {
         city: city.trim() || 'Pandharpur Devotee',
         check_in: checkIn,
         check_out: checkOut,
-        adults: parseInt(adults, 10),
-        children: parseInt(children, 10),
+        adults: priceBreakdown.adults,
+        children: priceBreakdown.childrenUnder4 + priceBreakdown.childrenAbove4,
+        children_under_4: priceBreakdown.childrenUnder4,
+        children_above_4: priceBreakdown.childrenAbove4,
+        total_guests: priceBreakdown.totalGuests,
+        included_guests: priceBreakdown.includedGuests,
+        extra_guests: priceBreakdown.extraGuests,
+        extra_person_rate: priceBreakdown.extraPersonRate,
         room_id: selectedRoom.room_id,
         room_name: selectedRoom.room_name,
         room_type: selectedRoom.room_type,
         room_quantity: parseInt(roomQty, 10),
-        room_rate: selectedRoom.price,
-        number_of_nights: numberOfNights,
-        total_amount: totalAmount,
+        room_rate: priceBreakdown.baseRate,
+        number_of_nights: priceBreakdown.numberOfNights,
+        base_charges: priceBreakdown.roomBaseCharge,
+        extra_charges: priceBreakdown.extraGuestCharge,
+        total_amount: priceBreakdown.totalAmount,
         payment_method: 'Pay at Property',
         payment_status: 'Pending',
         special_requests: specialRequests.trim() || 'None'
@@ -334,45 +357,91 @@ export const Booking = () => {
                       value={roomQty}
                       onChange={(e) => setRoomQty(parseInt(e.target.value, 10))}
                     >
-                      <option value="1">1 Room</option>
-                      <option value="2">2 Rooms</option>
-                      <option value="3">3 Rooms</option>
-                      <option value="4">4 Rooms</option>
+                      <option value="1">1 Room (Max 4 Guests)</option>
+                      <option value="2">2 Rooms (Max 8 Guests)</option>
+                      <option value="3">3 Rooms (Max 12 Guests)</option>
                     </select>
                   </div>
 
+                  {/* Adults */}
                   <div className="form-group">
-                    <label className="form-label">
-                      <Users size={15} color="var(--primary)" /> Adults (Age 12+)
+                    <label className="form-label" style={{ justifyContent: 'space-between' }}>
+                      <span><Users size={15} color="var(--primary)" /> Adults</span>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Age 5+ / Adult</span>
                     </label>
                     <select
                       className="form-control"
                       value={adults}
                       onChange={(e) => setAdults(parseInt(e.target.value, 10))}
                     >
-                      <option value="1">1 Adult</option>
-                      <option value="2">2 Adults</option>
-                      <option value="3">3 Adults</option>
-                      <option value="4">4 Adults</option>
-                      <option value="5">5 Adults</option>
-                      <option value="6">6+ Adults</option>
+                      {Array.from({ length: Math.min(12, 4 * roomQty) }, (_, i) => i + 1).map((num) => (
+                        <option key={num} value={num}>
+                          {num} Adult{num > 1 ? 's' : ''} {num > (2 * roomQty) ? `(+₹${pricingConfig.extra_person_rate}/nt)` : ''}
+                        </option>
+                      ))}
                     </select>
                   </div>
 
+                  {/* Children 0-4 Years (Free) */}
                   <div className="form-group">
-                    <label className="form-label">
-                      <Users size={15} color="var(--primary)" /> Children (0-11 yrs)
+                    <label className="form-label" style={{ justifyContent: 'space-between' }}>
+                      <span><Users size={15} color="var(--success)" /> Children (0–4 yrs)</span>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--success)', fontWeight: 700 }}>FREE</span>
                     </label>
                     <select
                       className="form-control"
-                      value={children}
-                      onChange={(e) => setChildren(parseInt(e.target.value, 10))}
+                      value={childrenUnder4}
+                      onChange={(e) => setChildrenUnder4(parseInt(e.target.value, 10))}
                     >
-                      <option value="0">0 Children</option>
-                      <option value="1">1 Child (Free under 4)</option>
-                      <option value="2">2 Children</option>
-                      <option value="3">3 Children</option>
+                      {Array.from({ length: (4 * roomQty) + 1 }, (_, i) => i).map((num) => (
+                        <option key={num} value={num}>
+                          {num} Child{num === 1 ? '' : 'ren'} (0–4 yrs: Free)
+                        </option>
+                      ))}
                     </select>
+                  </div>
+
+                  {/* Children Above 4 Years (Chargeable if total chargeable > 2 per room) */}
+                  <div className="form-group">
+                    <label className="form-label" style={{ justifyContent: 'space-between' }}>
+                      <span><Users size={15} color="var(--gold)" /> Children (Above 4 yrs)</span>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--primary)', fontWeight: 600 }}>
+                        ₹{pricingConfig.extra_person_rate}/nt extra
+                      </span>
+                    </label>
+                    <select
+                      className="form-control"
+                      value={childrenAbove4}
+                      onChange={(e) => setChildrenAbove4(parseInt(e.target.value, 10))}
+                    >
+                      {Array.from({ length: (4 * roomQty) + 1 }, (_, i) => i).map((num) => (
+                        <option key={num} value={num}>
+                          {num} Child{num === 1 ? '' : 'ren'} (Above 4 yrs)
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Occupancy Policy & Total Persons Notice */}
+                <div style={{ marginBottom: '1.25rem', padding: '0.85rem 1rem', borderRadius: 'var(--radius-md)', backgroundColor: priceBreakdown.exceedsMaxCapacity ? 'var(--danger-bg)' : 'var(--bg-primary)', border: `1px solid ${priceBreakdown.exceedsMaxCapacity ? 'var(--danger)' : 'var(--border-light)'}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    {priceBreakdown.exceedsMaxCapacity ? (
+                      <AlertCircle size={18} color="var(--danger)" />
+                    ) : (
+                      <Info size={18} color="var(--primary)" />
+                    )}
+                    <div style={{ fontSize: '0.85rem', color: priceBreakdown.exceedsMaxCapacity ? 'var(--danger)' : 'var(--text-main)' }}>
+                      <strong>Occupancy:</strong> {priceBreakdown.totalGuests} / {priceBreakdown.maxAllowedGuests} Persons Max ({roomQty} Room(s) × 4 max)
+                      {priceBreakdown.exceedsMaxCapacity && (
+                        <span style={{ fontWeight: 700, display: 'block', marginTop: '2px' }}>
+                          Limit exceeded! Maximum 4 persons per room. Please book an additional room.
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                    Standard tariff covers up to <strong>{priceBreakdown.includedGuests} guests</strong>
                   </div>
                 </div>
 
@@ -395,24 +464,69 @@ export const Booking = () => {
                   )}
                 </div>
 
-                {/* Live Tariff Summary Box */}
+                {/* Live Itemized Tariff Summary Box */}
                 {selectedRoom && (
-                  <div style={{ backgroundColor: 'var(--bg-primary)', padding: '1.25rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)', marginBottom: '1.75rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
-                      <span>{selectedRoom.room_name} (₹{selectedRoom.price} × {roomQty} room × {numberOfNights} night{numberOfNights > 1 ? 's' : ''})</span>
-                      <span style={{ fontWeight: 700 }}>₹{(selectedRoom.price * roomQty * numberOfNights).toLocaleString('en-IN')}</span>
+                  <div style={{ backgroundColor: '#FFFFFF', padding: '1.5rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-gold)', boxShadow: 'var(--shadow-sm)', marginBottom: '1.75rem' }}>
+                    <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-main)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', paddingBottom: '0.6rem', borderBottom: '1px solid var(--border-light)' }}>
+                      <DollarSign size={18} color="var(--primary)" /> Itemized Tariff Breakdown
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-                      <span>Taxes & Service Fees</span>
+
+                    {/* Line 1: Room Base Charge */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.6rem', fontSize: '0.9rem' }}>
+                      <span>
+                        <strong>Room Base Tariff:</strong> {selectedRoom.room_name}
+                        <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                          ₹{priceBreakdown.baseRate} × {priceBreakdown.roomQty} room × {priceBreakdown.numberOfNights} night{priceBreakdown.numberOfNights > 1 ? 's' : ''} (Includes up to {priceBreakdown.includedGuests} guests)
+                        </div>
+                      </span>
+                      <span style={{ fontWeight: 700 }}>₹{priceBreakdown.roomBaseCharge.toLocaleString('en-IN')}</span>
+                    </div>
+
+                    {/* Line 2: Extra Guest Charge */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.6rem', fontSize: '0.9rem' }}>
+                      <span>
+                        <strong>Extra Guest Charge:</strong>
+                        <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                          {priceBreakdown.extraGuests > 0 ? (
+                            `${priceBreakdown.extraGuests} extra person(s) × ₹${priceBreakdown.extraPersonRate} × ${priceBreakdown.numberOfNights} night(s)`
+                          ) : (
+                            `No extra guest charges (Chargeable guests: ${priceBreakdown.chargeableGuests} ≤ ${priceBreakdown.includedGuests} included)`
+                          )}
+                        </div>
+                      </span>
+                      <span style={{ fontWeight: 700, color: priceBreakdown.extraGuests > 0 ? 'var(--primary)' : 'var(--text-main)' }}>
+                        {priceBreakdown.extraGuests > 0 ? `₹${priceBreakdown.extraGuestCharge.toLocaleString('en-IN')}` : '₹0'}
+                      </span>
+                    </div>
+
+                    {/* Line 3: Children under 4 */}
+                    {priceBreakdown.childrenUnder4 > 0 && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.6rem', fontSize: '0.9rem' }}>
+                        <span>
+                          <strong>Children (Ages 0–4):</strong>
+                          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                            {priceBreakdown.childrenUnder4} child(ren) aged 0–4 years stay free of charge
+                          </div>
+                        </span>
+                        <span style={{ color: 'var(--success)', fontWeight: 700 }}>FREE (₹0)</span>
+                      </div>
+                    )}
+
+                    {/* Line 4: Taxes */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.6rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+                      <span>Applicable Taxes &amp; Booking Fees</span>
                       <span style={{ color: 'var(--success)', fontWeight: 600 }}>INCLUDED (₹0 extra)</span>
                     </div>
+
                     <div style={{ height: '1px', backgroundColor: 'var(--border-light)', margin: '0.75rem 0' }} />
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.15rem', fontWeight: 800 }}>
-                      <span style={{ color: 'var(--text-main)' }}>Total Estimated Amount:</span>
-                      <span style={{ color: 'var(--primary)' }}>₹{totalAmount.toLocaleString('en-IN')}</span>
+
+                    {/* Total Amount */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.25rem', fontWeight: 800 }}>
+                      <span style={{ color: 'var(--text-main)' }}>Total Payable Amount:</span>
+                      <span style={{ color: 'var(--primary)' }}>₹{priceBreakdown.totalAmount.toLocaleString('en-IN')}</span>
                     </div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                      Payment will be collected at property during check-in.
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.35rem' }}>
+                      ₹0 deposit required online. 100% payment collected at property check-in.
                     </div>
                   </div>
                 )}
@@ -531,16 +645,38 @@ export const Booking = () => {
                   </div>
                 </div>
 
-                {/* Stay Summary Recap */}
-                <div style={{ backgroundColor: 'var(--gold-light)', border: '1px solid var(--gold-border)', borderRadius: 'var(--radius-md)', padding: '1.25rem', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
-                  <div style={{ fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <ShieldCheck size={16} color="var(--primary)" /> Reservation Summary
+                {/* Stay Summary Recap - Itemized Line Items */}
+                <div style={{ backgroundColor: 'var(--gold-light)', border: '1px solid var(--gold-border)', borderRadius: 'var(--radius-md)', padding: '1.5rem', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
+                  <div style={{ fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '1rem', paddingBottom: '0.5rem', borderBottom: '1px solid var(--gold-border)' }}>
+                    <ShieldCheck size={18} color="var(--primary)" /> Itemized Reservation Summary
                   </div>
-                  <div><strong>Room:</strong> {selectedRoom?.room_name} ({roomQty} unit)</div>
-                  <div><strong>Duration:</strong> {checkIn} to {checkOut} ({numberOfNights} night{numberOfNights > 1 ? 's' : ''})</div>
-                  <div><strong>Total Amount Payable at Check-in:</strong> ₹{totalAmount.toLocaleString('en-IN')}</div>
-                  <div style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: '#66420B' }}>
-                    • No advance payment required online. Pay via Cash or UPI at front desk.
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
+                    <span><strong>Room:</strong> {selectedRoom?.room_name} ({roomQty} unit)</span>
+                    <span>{checkIn} to {checkOut} ({priceBreakdown.numberOfNights} night{priceBreakdown.numberOfNights > 1 ? 's' : ''})</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem', color: 'var(--text-secondary)' }}>
+                    <span>Room Base Charges (Up to {priceBreakdown.includedGuests} guests):</span>
+                    <span style={{ fontWeight: 600 }}>₹{priceBreakdown.roomBaseCharge.toLocaleString('en-IN')}</span>
+                  </div>
+                  {priceBreakdown.extraGuests > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem', color: 'var(--primary)' }}>
+                      <span>Extra Guest Charges ({priceBreakdown.extraGuests} extra × ₹{priceBreakdown.extraPersonRate} × {priceBreakdown.numberOfNights}n):</span>
+                      <span style={{ fontWeight: 700 }}>+₹{priceBreakdown.extraGuestCharge.toLocaleString('en-IN')}</span>
+                    </div>
+                  )}
+                  {priceBreakdown.childrenUnder4 > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem', color: 'var(--success)' }}>
+                      <span>Children (0–4 yrs: {priceBreakdown.childrenUnder4} child):</span>
+                      <span style={{ fontWeight: 700 }}>FREE (₹0)</span>
+                    </div>
+                  )}
+                  <div style={{ height: '1px', backgroundColor: 'var(--gold-border)', margin: '0.65rem 0' }} />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.15rem', fontWeight: 800 }}>
+                    <span style={{ color: 'var(--text-main)' }}>Total Payable at Check-in:</span>
+                    <span style={{ color: 'var(--primary)' }}>₹{priceBreakdown.totalAmount.toLocaleString('en-IN')}</span>
+                  </div>
+                  <div style={{ marginTop: '0.65rem', fontSize: '0.8rem', color: '#66420B' }}>
+                    • Zero advance deposit required online. 100% payment via Cash or UPI at property front desk.
                   </div>
                 </div>
 
@@ -612,7 +748,11 @@ export const Booking = () => {
                   <div>
                     <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 600 }}>ROOM TYPE</div>
                     <div style={{ fontWeight: 700 }}>{confirmedBooking.room_name}</div>
-                    <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{confirmedBooking.room_quantity} Room ({confirmedBooking.adults} Adults, {confirmedBooking.children} Kids)</div>
+                    <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                      {confirmedBooking.room_quantity} Room ({confirmedBooking.adults} Adults
+                      {confirmedBooking.children_under_4 > 0 ? `, ${confirmedBooking.children_under_4} Child <4y (Free)` : ''}
+                      {confirmedBooking.children_above_4 > 0 ? `, ${confirmedBooking.children_above_4} Child >4y` : ''})
+                    </div>
                   </div>
 
                   <div>
@@ -628,8 +768,19 @@ export const Booking = () => {
                   </div>
                 </div>
 
-                {/* Payable Box */}
+                {/* Payable Box with Itemized Breakdown */}
                 <div style={{ backgroundColor: 'var(--bg-primary)', padding: '1.25rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)', marginBottom: '1.5rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.35rem', fontSize: '0.85rem' }}>
+                    <span>Room Base Tariff ({confirmedBooking.number_of_nights}N × ₹{confirmedBooking.room_rate}):</span>
+                    <span>₹{(confirmedBooking.base_charges || (confirmedBooking.room_rate * confirmedBooking.room_quantity * confirmedBooking.number_of_nights)).toLocaleString('en-IN')}</span>
+                  </div>
+                  {(confirmedBooking.extra_charges > 0 || confirmedBooking.extra_guests > 0) && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.35rem', fontSize: '0.85rem', color: 'var(--primary)' }}>
+                      <span>Extra Guest Charges ({confirmedBooking.extra_guests || 1} extra guest × {confirmedBooking.number_of_nights}N):</span>
+                      <span>+₹{(confirmedBooking.extra_charges || 0).toLocaleString('en-IN')}</span>
+                    </div>
+                  )}
+                  <div style={{ height: '1px', backgroundColor: 'var(--border-light)', margin: '0.5rem 0' }} />
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
                       <div style={{ fontWeight: 700, fontSize: '1rem' }}>Total Payable at Property</div>

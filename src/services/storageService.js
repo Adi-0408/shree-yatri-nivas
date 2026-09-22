@@ -1,4 +1,4 @@
-import { DEFAULT_ROOMS, DEFAULT_BOOKINGS, DEFAULT_REVIEWS, DEFAULT_CUSTOMERS } from './seedData';
+import { DEFAULT_ROOMS, DEFAULT_BOOKINGS, DEFAULT_REVIEWS, DEFAULT_CUSTOMERS, DEFAULT_PRICING_CONFIG } from './seedData';
 
 const STORAGE_KEYS = {
   ROOMS: "syn_rooms_v1",
@@ -6,13 +6,15 @@ const STORAGE_KEYS = {
   REVIEWS: "syn_reviews_v1",
   ADMIN_LOGGED_IN: "syn_admin_auth_v1",
   CUSTOMERS: "syn_customers_v1",
-  CURRENT_CUSTOMER: "syn_current_customer_v1"
+  CURRENT_CUSTOMER: "syn_current_customer_v1",
+  PRICING_CONFIG: "syn_pricing_config_v2"
 };
 
 export const StorageService = {
   init() {
     if (typeof window === "undefined") return;
-    if (!localStorage.getItem(STORAGE_KEYS.ROOMS)) {
+    const storedRooms = localStorage.getItem(STORAGE_KEYS.ROOMS);
+    if (!storedRooms || storedRooms.includes("SYN-RM-101")) {
       localStorage.setItem(STORAGE_KEYS.ROOMS, JSON.stringify(DEFAULT_ROOMS));
     }
     if (!localStorage.getItem(STORAGE_KEYS.BOOKINGS)) {
@@ -23,6 +25,9 @@ export const StorageService = {
     }
     if (!localStorage.getItem(STORAGE_KEYS.CUSTOMERS)) {
       localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(DEFAULT_CUSTOMERS));
+    }
+    if (!localStorage.getItem(STORAGE_KEYS.PRICING_CONFIG)) {
+      localStorage.setItem(STORAGE_KEYS.PRICING_CONFIG, JSON.stringify(DEFAULT_PRICING_CONFIG));
     }
   },
 
@@ -395,11 +400,204 @@ export const StorageService = {
     };
   },
 
+  // =========================================================================
+  // DYNAMIC PRICING & INVENTORY MANAGEMENT
+  // =========================================================================
+  getPricingConfig() {
+    this.init();
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.PRICING_CONFIG);
+      return data ? JSON.parse(data) : DEFAULT_PRICING_CONFIG;
+    } catch {
+      return DEFAULT_PRICING_CONFIG;
+    }
+  },
+
+  updatePricingConfig(newConfig, adminUser = "Admin") {
+    this.init();
+
+    // Validation
+    const acRate = Number(newConfig.base_rates?.AC);
+    const nonAcRate = Number(newConfig.base_rates?.["Non-AC"]);
+    const extraRate = Number(newConfig.extra_person_rate);
+    const childAgeLimit = Number(newConfig.child_age_free_limit);
+    const acQty = Number(newConfig.inventory?.AC?.total_rooms);
+    const nonAcQty = Number(newConfig.inventory?.["Non-AC"]?.total_rooms);
+
+    if (isNaN(acRate) || acRate < 0) {
+      throw new Error("AC room base rate must be a valid positive number.");
+    }
+    if (isNaN(nonAcRate) || nonAcRate < 0) {
+      throw new Error("Non-AC room base rate must be a valid positive number.");
+    }
+    if (isNaN(extraRate) || extraRate < 0) {
+      throw new Error("Extra person rate must be a valid positive number.");
+    }
+    if (isNaN(childAgeLimit) || childAgeLimit < 0) {
+      throw new Error("Child free age limit must be a valid positive number.");
+    }
+    if (isNaN(acQty) || acQty < 0) {
+      throw new Error("AC room inventory count must be 0 or greater.");
+    }
+    if (isNaN(nonAcQty) || nonAcQty < 0) {
+      throw new Error("Non-AC room inventory count must be 0 or greater.");
+    }
+
+    const current = this.getPricingConfig();
+    const auditLogs = current.audit_logs || [];
+
+    const changeDescriptions = [];
+    if (current.base_rates?.AC !== acRate) changeDescriptions.push(`AC Rate: ₹${current.base_rates?.AC} → ₹${acRate}`);
+    if (current.base_rates?.["Non-AC"] !== nonAcRate) changeDescriptions.push(`Non-AC Rate: ₹${current.base_rates?.["Non-AC"]} → ₹${nonAcRate}`);
+    if (current.extra_person_rate !== extraRate) changeDescriptions.push(`Extra Person: ₹${current.extra_person_rate} → ₹${extraRate}`);
+    if (current.child_age_free_limit !== childAgeLimit) changeDescriptions.push(`Child Free Age: ${current.child_age_free_limit}y → ${childAgeLimit}y`);
+    if (current.inventory?.AC?.total_rooms !== acQty) changeDescriptions.push(`AC Rooms: ${current.inventory?.AC?.total_rooms} → ${acQty}`);
+    if (current.inventory?.["Non-AC"]?.total_rooms !== nonAcQty) changeDescriptions.push(`Non-AC Rooms: ${current.inventory?.["Non-AC"]?.total_rooms} → ${nonAcQty}`);
+    if (current.inventory?.AC?.active !== newConfig.inventory?.AC?.active) changeDescriptions.push(`AC Status: ${newConfig.inventory?.AC?.active ? 'Active' : 'Inactive'}`);
+    if (current.inventory?.["Non-AC"]?.active !== newConfig.inventory?.["Non-AC"]?.active) changeDescriptions.push(`Non-AC Status: ${newConfig.inventory?.["Non-AC"]?.active ? 'Active' : 'Inactive'}`);
+
+    const newLogEntry = {
+      id: `LOG-${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      modified_by: adminUser,
+      action: changeDescriptions.length > 0 ? changeDescriptions.join(", ") : "Updated configuration values"
+    };
+
+    const updatedConfig = {
+      ...current,
+      ...newConfig,
+      base_rates: {
+        AC: acRate,
+        "Non-AC": nonAcRate
+      },
+      extra_person_rate: extraRate,
+      child_age_free_limit: childAgeLimit,
+      base_capacity_per_room: 2,
+      max_capacity_per_room: 4,
+      inventory: {
+        AC: {
+          total_rooms: acQty,
+          active: newConfig.inventory?.AC?.active !== false
+        },
+        "Non-AC": {
+          total_rooms: nonAcQty,
+          active: newConfig.inventory?.["Non-AC"]?.active !== false
+        }
+      },
+      last_modified_by: adminUser,
+      last_modified_at: new Date().toISOString(),
+      audit_logs: [newLogEntry, ...auditLogs].slice(0, 50)
+    };
+
+    localStorage.setItem(STORAGE_KEYS.PRICING_CONFIG, JSON.stringify(updatedConfig));
+
+    // Auto-sync room models in STORAGE_KEYS.ROOMS
+    const rooms = this.getRooms(true);
+    rooms.forEach(room => {
+      if (room.ac_status === "AC") {
+        room.price = acRate;
+        room.total_quantity = acQty;
+        room.status = updatedConfig.inventory.AC.active ? "active" : "inactive";
+      } else if (room.ac_status === "Non-AC") {
+        room.price = nonAcRate;
+        room.total_quantity = nonAcQty;
+        room.status = updatedConfig.inventory["Non-AC"].active ? "active" : "inactive";
+      }
+    });
+    localStorage.setItem(STORAGE_KEYS.ROOMS, JSON.stringify(rooms));
+
+    // Trigger window event for reactive UI updates
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("syn_pricing_updated", { detail: updatedConfig }));
+    }
+
+    return { success: true, pricing: updatedConfig };
+  },
+
+  // Dynamic Booking Price Calculator
+  calculateBookingCost(params = {}) {
+    const config = this.getPricingConfig();
+    const {
+      roomId,
+      acStatus,
+      checkIn,
+      checkOut,
+      roomQty = 1,
+      adults = 2,
+      childrenUnder4 = 0,
+      childrenAbove4 = 0
+    } = params;
+
+    const parsedQty = Math.max(1, parseInt(roomQty, 10) || 1);
+    const parsedAdults = Math.max(1, parseInt(adults, 10) || 1);
+    const parsedKidsUnder4 = Math.max(0, parseInt(childrenUnder4, 10) || 0);
+    const parsedKidsAbove4 = Math.max(0, parseInt(childrenAbove4, 10) || 0);
+
+    // Nights calculation
+    let nights = 1;
+    if (checkIn && checkOut) {
+      const diff = new Date(checkOut).getTime() - new Date(checkIn).getTime();
+      const calcDays = Math.ceil(diff / (1000 * 60 * 60 * 24));
+      nights = calcDays > 0 ? calcDays : 1;
+    }
+
+    // Resolve room base rate
+    let room = null;
+    if (roomId) {
+      room = this.getRoomById(roomId);
+    }
+    const resolvedAcStatus = room ? room.ac_status : (acStatus || "AC");
+    const baseRate = room?.price ?? (config.base_rates?.[resolvedAcStatus] || 2400);
+
+    // Occupancy rules
+    const baseCapacityPerRoom = config.base_capacity_per_room || 2;
+    const maxCapacityPerRoom = config.max_capacity_per_room || 4;
+    const maxAllowedGuests = maxCapacityPerRoom * parsedQty;
+
+    const totalGuests = parsedAdults + parsedKidsUnder4 + parsedKidsAbove4;
+    const exceedsMaxCapacity = totalGuests > maxAllowedGuests;
+
+    // Chargeable guests: Adults + Children above 4 (Children 0-4 are free)
+    const chargeableGuests = parsedAdults + parsedKidsAbove4;
+    const includedGuests = baseCapacityPerRoom * parsedQty;
+    const extraGuests = Math.max(0, chargeableGuests - includedGuests);
+
+    // Cost line items
+    const roomBaseCharge = baseRate * parsedQty * nights;
+    const extraGuestCharge = extraGuests * (config.extra_person_rate || 700) * nights;
+    const totalAmount = roomBaseCharge + extraGuestCharge;
+
+    return {
+      numberOfNights: nights,
+      roomQty: parsedQty,
+      baseRate,
+      roomBaseCharge,
+      adults: parsedAdults,
+      childrenUnder4: parsedKidsUnder4,
+      childrenAbove4: parsedKidsAbove4,
+      totalGuests,
+      includedGuests,
+      chargeableGuests,
+      extraGuests,
+      extraPersonRate: config.extra_person_rate || 700,
+      extraGuestCharge,
+      totalAmount,
+      maxAllowedGuests,
+      exceedsMaxCapacity,
+      childAgeLimit: config.child_age_free_limit || 4,
+      acStatus: resolvedAcStatus
+    };
+  },
+
   resetToDefaults() {
     localStorage.setItem(STORAGE_KEYS.ROOMS, JSON.stringify(DEFAULT_ROOMS));
     localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(DEFAULT_BOOKINGS));
     localStorage.setItem(STORAGE_KEYS.REVIEWS, JSON.stringify(DEFAULT_REVIEWS));
     localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(DEFAULT_CUSTOMERS));
+    localStorage.setItem(STORAGE_KEYS.PRICING_CONFIG, JSON.stringify(DEFAULT_PRICING_CONFIG));
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("syn_pricing_updated", { detail: DEFAULT_PRICING_CONFIG }));
+    }
     return true;
   }
 };
