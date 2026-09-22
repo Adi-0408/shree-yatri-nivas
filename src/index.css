@@ -635,6 +635,10 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
+.syn-desktop-only {
+  /* Hidden on mobile — same control lives inside the hamburger drawer */
+}
+
 .syn-mobile-menu-btn {
   display: none;
   padding: 0.5rem;
@@ -1916,23 +1920,297 @@ body.modal-open {
 }
 
 /* ==========================================================================
-   Responsive Breakpoints
+   Responsive Breakpoints — Mobile-First (shree-yatri-nivas)
    ========================================================================== */
+
+/* ---------- 992 px – Tablet landscape & small desktop ---------- */
 @media (max-width: 992px) {
-  .hero-title { font-size: 2.6rem; }
+  /* Typography */
+  .hero-title { font-size: 2.4rem; }
+
+  /* Footer */
   .footer-grid { grid-template-columns: 1fr 1fr; gap: 2rem; }
+
+  /* Admin */
   .admin-layout { grid-template-columns: 1fr; }
-  .admin-sidebar { border-right: none; border-bottom: 1px solid var(--border-light); }
+  .admin-sidebar {
+    border-right: none;
+    border-bottom: 1px solid var(--border-light);
+    padding: 1.25rem;
+  }
+
+  /* Navbar */
   .syn-nav-links { display: none; }
   .syn-mobile-menu-btn { display: flex; }
+  .syn-desktop-only { display: none !important; }
 }
 
-@media (max-width: 640px) {
-  .hero-title { font-size: 2.1rem; }
-  .hero-lead { font-size: 1.05rem; }
-  .footer-grid { grid-template-columns: 1fr; gap: 2rem; }
-  .search-form-grid { grid-template-columns: 1fr; }
-  .toast-container { right: 1rem; left: 1rem; bottom: 1rem; }
-  .floating-whatsapp { bottom: 1.5rem; left: 1.5rem; width: 50px; height: 50px; }
-  .scroll-to-top-btn { bottom: 1.5rem; right: 1.5rem; width: 44px; height: 44px; }
+/* ---------- 768 px – Tablet portrait ---------- */
+@media (max-width: 768px) {
+  /* ---- Global containers ---- */
+  .syn-container,
+  .syn-container-sm {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  /* ---- Hero Section ---- */
+  .hero-section {
+    padding: 4.5rem 0 3.5rem;
+  }
+  .hero-title {
+    font-size: 2rem;
+    line-height: 1.2;
+  }
+  .hero-lead {
+    font-size: 1rem;
+    margin-bottom: 0;
+  }
+  .hero-subtitle-tag {
+    font-size: 0.78rem;
+  }
+
+  /* ---- Search / Booking widget ---- */
+  .search-widget-card {
+    padding: 1.25rem 1rem;
+    margin-top: 1.75rem;
+    border-radius: var(--radius-lg);
+  }
+  .search-form-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  /* ---- Room Cards grid ---- */
+  .room-card-img-wrapper { height: 200px; }
+  .room-card-footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.85rem;
+  }
+  .room-card-footer > div:last-child {
+    width: 100%;
+    display: flex;
+    gap: 0.5rem;
+  }
+  .room-card-footer > div:last-child .btn {
+    flex: 1;
+    justify-content: center;
+  }
+
+  /* ---- Booking wizard ---- */
+  .booking-wizard-nav {
+    gap: 0.25rem;
+    margin-bottom: 1.75rem;
+  }
+  .wizard-label {
+    font-size: 0.7rem;
+  }
+  .booking-wizard-step {
+    padding: 0 0.25rem;
+  }
+  .wizard-circle {
+    width: 36px;
+    height: 36px;
+    font-size: 0.88rem;
+  }
+
+  /* ---- Reviews 2-col → 1-col ---- */
+  .reviews-two-col {
+    grid-template-columns: 1fr !important;
+    gap: 2rem;
+  }
+  /* Make the sticky form not sticky on mobile */
+  .review-form-sticky {
+    position: static !important;
+    top: auto !important;
+  }
+
+  /* ---- Contact 2-col → 1-col ---- */
+  .contact-form-map-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1.5rem;
+  }
+  .contact-inner-name-mobile-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1rem;
+  }
+
+  /* ---- Admin layout ---- */
+  .admin-sidebar {
+    padding: 1rem;
+  }
+  /* Admin sidebar nav: horizontal scrolling row on small screens */
+  .admin-sidebar nav {
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+    gap: 0.25rem !important;
+    padding-bottom: 0.25rem;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .admin-sidebar nav::-webkit-scrollbar { display: none; }
+  .admin-nav-item {
+    flex-shrink: 0;
+    font-size: 0.78rem;
+    padding: 0.55rem 0.75rem;
+    white-space: nowrap;
+    border-left: none !important;
+    border-bottom: 3px solid transparent;
+  }
+  .admin-nav-item.active {
+    border-bottom-color: var(--primary);
+  }
+  .admin-content {
+    padding: 1.25rem !important;
+  }
+
+  /* ---- KPI grid ---- */
+  .kpi-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+  .kpi-val { font-size: 1.6rem; }
+
+  /* ---- Modal dialog ---- */
+  .modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+  .modal-dialog {
+    border-bottom-left-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+    border-top-left-radius: var(--radius-xl) !important;
+    border-top-right-radius: var(--radius-xl) !important;
+    max-height: 92dvh;
+    width: 100%;
+    max-width: 100%;
+    animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* ---- Room Details Modal ---- */
+  .room-modal-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* ---- Admin room modal ---- */
+  .admin-room-form-grid-2col,
+  .admin-room-form-grid-3col {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+
+  /* ---- Voucher card tear notches ---- */
+  .voucher-card::before,
+  .voucher-card::after { display: none; }
+
+  /* ---- Table horizontal scroll hint ---- */
+  .table-responsive {
+    -webkit-overflow-scrolling: touch;
+    border-radius: var(--radius-sm);
+  }
+
+  /* ---- Footer ---- */
+  .footer-grid { grid-template-columns: 1fr; gap: 1.75rem; }
 }
+
+/* ---------- 640 px – Mobile portrait ---------- */
+@media (max-width: 640px) {
+  /* Typography */
+  .hero-title { font-size: 1.75rem; }
+  .hero-lead  { font-size: 0.95rem; }
+
+  /* Toast */
+  .toast-container { right: 0.75rem; left: 0.75rem; bottom: 5rem; max-width: 100%; }
+
+  /* Floating FABs */
+  .floating-whatsapp     { bottom: 1.25rem; left: 1.25rem; width: 48px; height: 48px; }
+  .scroll-to-top-btn     { bottom: 1.25rem; right: 1.25rem; width: 44px; height: 44px; }
+
+  /* Navbar brand text */
+  .syn-brand-subtitle { display: none; }
+  .syn-brand-title { font-size: 1rem; }
+
+  /* Hero section spacing */
+  .hero-section { padding: 3.75rem 0 2.75rem; }
+  .search-widget-card { padding: 1rem; }
+
+  /* KPI grid stacks to 1 column on very small screens */
+  .kpi-grid { grid-template-columns: 1fr; }
+
+  /* Booking wizard labels hidden, just show circles */
+  .wizard-label { display: none; }
+  .booking-wizard-step { padding: 0; }
+  .booking-wizard-nav { justify-content: center; gap: 0.5rem; }
+
+  /* Buttons full-width on action rows */
+  .voucher-actions-row {
+    flex-direction: column !important;
+  }
+  .voucher-actions-row .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Room card footer always stacked */
+  .room-card-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .room-card-footer > div:last-child {
+    width: 100%;
+  }
+  .room-card-footer > div:last-child .btn {
+    flex: 1;
+    justify-content: center;
+  }
+
+  /* Sections vertical spacing */
+  section { padding-top: 2.75rem !important; padding-bottom: 2.75rem !important; }
+
+  /* Admin table compacted */
+  .syn-table th,
+  .syn-table td { padding: 0.75rem 0.85rem; }
+
+  /* Contact form inner row */
+  .contact-inner-name-mobile-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* form-control touch-friendly */
+  .form-control {
+    font-size: 1rem; /* prevents iOS auto-zoom */
+    min-height: 46px;
+  }
+
+  /* CustomSelect trigger touch target */
+  .syn-select-trigger {
+    min-height: 46px;
+  }
+}
+
+/* ---------- slide-up animation for bottom-sheet modals ---------- */
+@keyframes slideUp {
+  from { transform: translateY(40px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* ---------- reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .syn-page-transition,
+  ::view-transition-old(root),
+  ::view-transition-new(root),
+  .syn-route-progress { animation: none !important; transition: none !important; }
+}
+
+/* ---------- print ---------- */
+@media print {
+  .no-print,
+  .syn-navbar,
+  .site-footer,
+  .floating-whatsapp,
+  .scroll-to-top-btn { display: none !important; }
+  .voucher-card { box-shadow: none; border: 1px solid #CCC; }
+}
+

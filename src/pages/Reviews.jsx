@@ -120,7 +120,7 @@ export const Reviews = () => {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '3rem' }}>
+          <div className="reviews-two-col" style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '3rem' }}>
             
             {/* Left Column: Reviews List */}
             <div>
@@ -167,7 +167,8 @@ export const Reviews = () => {
 
             {/* Right Column: Write a Review Form */}
             <div>
-              <div style={{ backgroundColor: '#FFFFFF', borderRadius: 'var(--radius-lg)', padding: '2rem', border: '1px solid var(--border-gold)', boxShadow: 'var(--shadow-md)', position: 'sticky', top: '100px' }}>
+              <div className="review-form-sticky" style={{ backgroundColor: '#FFFFFF', borderRadius: 'var(--radius-lg)', padding: '2rem', border: '1px solid var(--border-gold)', boxShadow: 'var(--shadow-md)', position: 'sticky', top: '100px' }}>
+
                 <h3 style={{ fontSize: '1.3rem', marginBottom: '0.5rem', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <MessageSquare size={18} color="var(--primary)" /> Share Your Stay Experience
                 </h3>

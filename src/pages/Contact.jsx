@@ -143,7 +143,7 @@ export const Contact = () => {
           </div>
 
           {/* Form & Map Grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '2.5rem', marginBottom: '4rem' }}>
+          <div className="contact-form-map-grid" style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '2.5rem', marginBottom: '4rem' }}>
             {/* Inquiry Form */}
             <div style={{ backgroundColor: '#FFFFFF', borderRadius: 'var(--radius-lg)', padding: '2.25rem', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)' }}>
               <h2 style={{ fontSize: '1.5rem', marginBottom: '0.5rem', color: 'var(--text-main)' }}>Send Us a Message</h2>
@@ -152,7 +152,7 @@ export const Contact = () => {
               </p>
 
               <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div className="contact-inner-name-mobile-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                   <div className="form-group">
                     <label className="form-label">Full Name *</label>
                     <input

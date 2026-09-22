@@ -135,7 +135,7 @@ export const Navbar = () => {
             </div>
           ) : (
             <button
-              className="btn btn-secondary btn-sm"
+              className="btn btn-secondary btn-sm syn-desktop-only"
               onClick={() => openAuthModal('login')}
               style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
             >
