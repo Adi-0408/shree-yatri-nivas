@@ -3,7 +3,8 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
-const PORT = process.env.PORT || 3000;
+const PORT = parseInt(process.env.PORT, 10) || 3000;
+const HOST = process.env.HOST || '0.0.0.0';
 const PUBLIC_DIR = __dirname;
 
 const MIME_TYPES = {
@@ -25,6 +26,28 @@ const MIME_TYPES = {
   '.xml': 'application/xml; charset=utf-8'
 };
 
+function resolveStaticFile(publicDir, reqPath) {
+  let cleanPath = decodeURIComponent(reqPath.split('?')[0]);
+  if (cleanPath === '/' || cleanPath === '') cleanPath = '/index.html';
+  cleanPath = cleanPath.replace(/\/+$/, '');
+  if (!cleanPath) cleanPath = '/index.html';
+
+  const candidates = [
+    path.join(publicDir, cleanPath),
+    path.join(publicDir, cleanPath + '.html'),
+    path.join(publicDir, cleanPath, 'index.html')
+  ];
+
+  for (const candidate of candidates) {
+    try {
+      if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
+        return candidate;
+      }
+    } catch {}
+  }
+  return null;
+}
+
 const server = http.createServer((req, res) => {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -39,11 +62,6 @@ const server = http.createServer((req, res) => {
 
   const parsedUrl = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
   let pathname = parsedUrl.pathname;
-
-  // Serve index.html for root
-  if (pathname === '/' || pathname === '') {
-    pathname = '/index.html';
-  }
 
   // REST API Endpoints
   if (pathname.startsWith('/api/')) {
@@ -95,64 +113,55 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // Static File Serving with extension fallback
-  let safePath = path.normalize(pathname).replace(/^(\.\.[\/\\])+/, '');
-  let filePath = path.join(PUBLIC_DIR, safePath);
+  // Static File Serving
+  const resolvedPath = resolveStaticFile(PUBLIC_DIR, pathname);
 
-  // Check if requested file exists or if appending .html matches
-  fs.stat(filePath, (err, stats) => {
-    if (err || !stats.isFile()) {
-      if (!path.extname(filePath)) {
-        const htmlAlternative = filePath + '.html';
-        if (fs.existsSync(htmlAlternative) && fs.statSync(htmlAlternative).isFile()) {
-          filePath = htmlAlternative;
-        } else {
-          return send404(res);
-        }
-      } else {
-        return send404(res);
-      }
+  if (!resolvedPath) {
+    const notFoundPath = path.join(PUBLIC_DIR, '404.html');
+    if (fs.existsSync(notFoundPath)) {
+      res.writeHead(404, { 'Content-Type': 'text/html; charset=utf-8' });
+      fs.createReadStream(notFoundPath).pipe(res);
+      return;
     }
 
-    const ext = path.extname(filePath).toLowerCase();
-    const contentType = MIME_TYPES[ext] || 'application/octet-stream';
+    res.writeHead(404, { 'Content-Type': 'text/html; charset=utf-8' });
+    res.end(`
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <title>404 — Page Not Found | Shree Yatri Nivas</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="/css/style.css">
+      </head>
+      <body style="background:#f8f8f7; min-height:100vh; display:flex; align-items:center; justify-content:center; text-align:center; padding:2rem; font-family:sans-serif;">
+        <div style="background:#ffffff; border:1px solid #e6e5e2; border-radius:16px; padding:3rem 2rem; max-width:480px; box-shadow:0 8px 24px rgba(0,0,0,0.06);">
+          <h1 style="font-size:2rem; color:#1a1a19; margin-bottom:0.75rem;">Page Not Found</h1>
+          <p style="color:#6f6e69; margin-bottom:2rem; font-size:0.95rem;">The page or resource you requested does not exist or has moved.</p>
+          <a href="/" style="display:inline-block; background:#1a1a19; color:#ffffff; padding:0.75rem 2rem; border-radius:9999px; text-decoration:none; font-weight:500;">Return to Home</a>
+        </div>
+      </body>
+      </html>
+    `);
+    return;
+  }
 
-    res.writeHead(200, {
-      'Content-Type': contentType,
-      'Cache-Control': ext === '.html' ? 'no-cache' : 'public, max-age=86400'
-    });
+  const ext = path.extname(resolvedPath).toLowerCase();
+  const contentType = MIME_TYPES[ext] || 'application/octet-stream';
 
-    const stream = fs.createReadStream(filePath);
-    stream.pipe(res);
+  res.writeHead(200, {
+    'Content-Type': contentType,
+    'Cache-Control': ext === '.html' ? 'no-cache' : 'public, max-age=86400'
   });
+
+  const stream = fs.createReadStream(resolvedPath);
+  stream.pipe(res);
 });
 
-function send404(res) {
-  res.writeHead(404, { 'Content-Type': 'text/html; charset=utf-8' });
-  res.end(`
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-      <meta charset="UTF-8">
-      <title>404 — Page Not Found | Shree Yatri Nivas</title>
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <link rel="stylesheet" href="/css/style.css">
-    </head>
-    <body style="background:var(--paper); min-height:100vh; display:flex; align-items:center; justify-content:center; text-align:center; padding:2rem;">
-      <div style="background:#ffffff; border:1px solid var(--line); border-radius:var(--radius-xl); padding:3.5rem 2.5rem; max-width:480px; box-shadow:var(--shadow-md);">
-        <div style="font-size:3rem; color:var(--gold); margin-bottom:1rem;"><i class="fa-solid fa-hotel"></i></div>
-        <h1 style="font-family:var(--font-serif); font-size:2.4rem; color:var(--ink); margin-bottom:0.75rem;">Page Not Found</h1>
-        <p style="color:var(--muted); margin-bottom:2rem; font-size:0.95rem;">The page or resource you requested does not exist or has moved.</p>
-        <a href="/" class="btn btn-primary" style="padding:0.75rem 2rem;">Return to Home</a>
-      </div>
-    </body>
-    </html>
-  `);
-}
-
-server.listen(PORT, () => {
+server.listen(PORT, HOST, () => {
   console.log(`=======================================================`);
   console.log(`  SHREE YATRI NIVAS Lodging System is Running!`);
+  console.log(`  Listening on:    http://${HOST}:${PORT}`);
   console.log(`  Customer Portal: http://localhost:${PORT}`);
   console.log(`  Rooms & Rates:   http://localhost:${PORT}/rooms.html`);
   console.log(`  Online Booking:  http://localhost:${PORT}/booking.html`);

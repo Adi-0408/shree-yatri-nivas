@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>404 — Page Not Found | Shree Yatri Nivas</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:ital,wght@0,400;0,500;0,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/responsive.css">
+  <style>
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background: var(--paper);
+      padding: 2rem 1.5rem;
+      text-align: center;
+    }
+    .not-found-card {
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-xl);
+      padding: 3.5rem 2.5rem;
+      max-width: 520px;
+      width: 100%;
+      box-shadow: var(--shadow-md);
+    }
+  </style>
+</head>
+<body>
+  <div class="not-found-card">
+    <div style="width: 64px; height: 64px; border-radius: 50%; background: var(--gold-soft); border: 1px solid var(--gold-border); color: var(--gold); display: flex; align-items: center; justify-content: center; font-size: 1.8rem; margin: 0 auto 1.5rem auto;">
+      <i class="fa-solid fa-om"></i>
+    </div>
+    <span class="section-tag" style="margin-bottom: 0.5rem;">Shree Yatri Nivas</span>
+    <h1 class="heading-serif" style="font-size: 2.5rem; color: var(--ink); margin-bottom: 0.75rem;">Page Not Found</h1>
+    <p style="color: var(--muted); font-size: 0.98rem; line-height: 1.65; margin-bottom: 2rem;">
+      The lodging page or resource you are looking for does not exist, has been moved, or the link is incomplete.
+    </p>
+    <div style="display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap;">
+      <a href="index.html" class="btn btn-primary" style="padding: 0.75rem 1.75rem;">
+        <i class="fa-solid fa-house"></i> Return to Home
+      </a>
+      <a href="rooms.html" class="btn btn-outline" style="padding: 0.75rem 1.75rem;">
+        <i class="fa-solid fa-bed"></i> Browse Rooms
+      </a>
+    </div>
+  </div>
+</body>
+</html>
