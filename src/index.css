@@ -1462,6 +1462,14 @@ select option:checked {
 /* ==========================================================================
    Modal Dialogs
    ========================================================================== */
+/* Background scroll-lock when modal / popup dialog is open */
+html:has(.modal-overlay),
+body:has(.modal-overlay),
+body.modal-open {
+  overflow: hidden !important;
+  touch-action: none !important;
+}
+
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -1474,6 +1482,30 @@ select option:checked {
   justify-content: center;
   padding: 1.5rem;
   animation: fadeIn 0.25s ease-out;
+  overscroll-behavior: contain;
+}
+
+@keyframes synSelectFade {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.syn-select-menu::-webkit-scrollbar {
+  width: 6px;
+}
+.syn-select-menu::-webkit-scrollbar-track {
+  background: var(--bg-canvas);
+  border-radius: 4px;
+}
+.syn-select-menu::-webkit-scrollbar-thumb {
+  background: var(--gold);
+  border-radius: 4px;
 }
 
 .modal-dialog {

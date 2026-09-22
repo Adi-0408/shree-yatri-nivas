@@ -15,6 +15,7 @@ import {
   Car,
   ChevronDown
 } from 'lucide-react';
+import { CustomSelect } from '../components/CustomSelect';
 
 export const Contact = () => {
   const { showSuccess, showError } = useToast();
@@ -178,16 +179,15 @@ export const Contact = () => {
 
                 <div className="form-group">
                   <label className="form-label">Subject / Purpose</label>
-                  <select
-                    className="form-control"
+                  <CustomSelect
                     value={subject}
                     onChange={(e) => setSubject(e.target.value)}
                   >
-                    <option>General Stay Inquiry</option>
-                    <option>Large Group / Bus Booking (10+ people)</option>
-                    <option>Temple Darshan & Route Guidance</option>
-                    <option>Feedback & Suggestions</option>
-                  </select>
+                    <option value="General Stay Inquiry">General Stay Inquiry</option>
+                    <option value="Large Group / Bus Booking (10+ people)">Large Group / Bus Booking (10+ people)</option>
+                    <option value="Temple Darshan & Route Guidance">Temple Darshan & Route Guidance</option>
+                    <option value="Feedback & Suggestions">Feedback & Suggestions</option>
+                  </CustomSelect>
                 </div>
 
                 <div className="form-group">

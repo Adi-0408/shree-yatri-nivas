@@ -41,6 +41,7 @@ import {
   EyeOff,
   Key
 } from 'lucide-react';
+import { CustomSelect } from '../components/CustomSelect';
 
 export const Admin = ({ initialTab }) => {
   const { 
@@ -116,6 +117,14 @@ export const Admin = ({ initialTab }) => {
   // Room Modal state (Create / Edit)
   const [roomModalOpen, setRoomModalOpen] = useState(false);
   const [editingRoom, setEditingRoom] = useState(null);
+
+  useEffect(() => {
+    if (!roomModalOpen) return;
+    document.body.classList.add('modal-open');
+    return () => {
+      document.body.classList.remove('modal-open');
+    };
+  }, [roomModalOpen]);
   const [roomFormData, setRoomFormData] = useState({
     room_name: '',
     room_type: 'Family Suite',
@@ -793,8 +802,7 @@ export const Admin = ({ initialTab }) => {
                 />
               </div>
               <div style={{ width: '180px' }}>
-                <select
-                  className="form-control"
+                <CustomSelect
                   value={bookingStatusFilter}
                   onChange={(e) => setBookingStatusFilter(e.target.value)}
                 >
@@ -803,7 +811,7 @@ export const Admin = ({ initialTab }) => {
                   <option value="Checked-in">Checked-in</option>
                   <option value="Checked-out">Checked-out</option>
                   <option value="Cancelled">Cancelled</option>
-                </select>
+                </CustomSelect>
               </div>
             </div>
 
@@ -843,27 +851,27 @@ export const Admin = ({ initialTab }) => {
                       </td>
                       <td>
                         <div style={{ fontWeight: 700 }}>₹{b.total_amount?.toLocaleString('en-IN')}</div>
-                        <select
+                        <CustomSelect
                           value={b.payment_status}
                           onChange={(e) => handleUpdatePaymentStatus(b.booking_id, e.target.value)}
-                          className={`table-status-select pay-${b.payment_status?.toLowerCase() || 'pending'}`}
+                          triggerClassName={`table-status-select pay-${b.payment_status?.toLowerCase() || 'pending'}`}
                           style={{ marginTop: '6px' }}
                         >
                           <option value="Pending">Pending</option>
                           <option value="Paid">Paid</option>
-                        </select>
+                        </CustomSelect>
                       </td>
                       <td>
-                        <select
+                        <CustomSelect
                           value={b.booking_status}
                           onChange={(e) => handleUpdateBookingStatus(b.booking_id, e.target.value)}
-                          className={`table-status-select status-${b.booking_status?.toLowerCase()?.replace(/\s+/g, '-') || 'confirmed'}`}
+                          triggerClassName={`table-status-select status-${b.booking_status?.toLowerCase()?.replace(/\s+/g, '-') || 'confirmed'}`}
                         >
                           <option value="Confirmed">Confirmed</option>
                           <option value="Checked-in">Checked-in</option>
                           <option value="Checked-out">Checked-out</option>
                           <option value="Cancelled">Cancelled</option>
-                        </select>
+                        </CustomSelect>
                       </td>
                       <td>
                         <button
@@ -1756,14 +1764,13 @@ export const Admin = ({ initialTab }) => {
 
                   <div className="form-group">
                     <label className="form-label">Access Level / Role</label>
-                    <select
-                      className="form-control"
+                    <CustomSelect
                       value={newStaffForm.role}
                       onChange={(e) => setNewStaffForm({ ...newStaffForm, role: e.target.value })}
                     >
                       <option value="staff">Staff (Front Desk &amp; Booking Management)</option>
                       <option value="admin">Administrator (Full Access)</option>
-                    </select>
+                    </CustomSelect>
                   </div>
 
                   <button
@@ -1896,14 +1903,13 @@ export const Admin = ({ initialTab }) => {
                   </div>
                   <div className="form-group">
                     <label className="form-label">AC / Non-AC</label>
-                    <select
-                      className="form-control"
+                    <CustomSelect
                       value={roomFormData.ac_status}
                       onChange={(e) => setRoomFormData({ ...roomFormData, ac_status: e.target.value })}
                     >
                       <option value="AC">AC</option>
                       <option value="Non-AC">Non-AC</option>
-                    </select>
+                    </CustomSelect>
                   </div>
                 </div>
 

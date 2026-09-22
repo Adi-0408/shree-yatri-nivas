@@ -18,6 +18,14 @@ export const RoomDetailsModal = ({ room, onClose }) => {
   const navigate = useNavigate();
   const [activeImgIndex, setActiveImgIndex] = useState(0);
 
+  useEffect(() => {
+    if (!room) return;
+    document.body.classList.add('modal-open');
+    return () => {
+      document.body.classList.remove('modal-open');
+    };
+  }, [room]);
+
   if (!room) return null;
 
   const images = room.images && room.images.length > 0

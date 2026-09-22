@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { StorageService } from '../services/storageService';
 import { RoomCard } from '../components/RoomCard';
 import { RoomDetailsModal } from '../components/RoomDetailsModal';
+import { CustomSelect } from '../components/CustomSelect';
 import { 
   Filter, 
   Search, 
@@ -122,15 +123,15 @@ export const Rooms = () => {
                 <label className="form-label">
                   <SlidersHorizontal size={14} color="var(--primary)" /> Category
                 </label>
-                <select
-                  className="form-control"
+                <CustomSelect
                   value={acFilter}
                   onChange={(e) => setAcFilter(e.target.value)}
-                >
-                  <option value="all">All (AC & Non-AC)</option>
-                  <option value="AC">AC Rooms</option>
-                  <option value="Non-AC">Non-AC Rooms</option>
-                </select>
+                  options={[
+                    { value: 'all', label: 'All (AC & Non-AC)' },
+                    { value: 'AC', label: 'AC Rooms' },
+                    { value: 'Non-AC', label: 'Non-AC Rooms' }
+                  ]}
+                />
               </div>
 
               {/* Minimum Capacity */}
@@ -138,17 +139,17 @@ export const Rooms = () => {
                 <label className="form-label">
                   <Users size={14} color="var(--primary)" /> Min. Capacity
                 </label>
-                <select
-                  className="form-control"
+                <CustomSelect
                   value={capacityFilter}
                   onChange={(e) => setCapacityFilter(e.target.value)}
-                >
-                  <option value="all">Any Capacity</option>
-                  <option value="2">2+ Guests</option>
-                  <option value="3">3+ Guests</option>
-                  <option value="4">4+ Guests</option>
-                  <option value="5">5+ Guests</option>
-                </select>
+                  options={[
+                    { value: 'all', label: 'Any Capacity' },
+                    { value: '2', label: '2+ Guests' },
+                    { value: '3', label: '3+ Guests' },
+                    { value: '4', label: '4+ Guests' },
+                    { value: '5', label: '5+ Guests' }
+                  ]}
+                />
               </div>
 
               {/* Price Sort */}
@@ -156,15 +157,15 @@ export const Rooms = () => {
                 <label className="form-label">
                   <Filter size={14} color="var(--primary)" /> Sort By Price
                 </label>
-                <select
-                  className="form-control"
+                <CustomSelect
                   value={priceSort}
                   onChange={(e) => setPriceSort(e.target.value)}
-                >
-                  <option value="none">Featured</option>
-                  <option value="low-to-high">Price: Low to High</option>
-                  <option value="high-to-low">Price: High to Low</option>
-                </select>
+                  options={[
+                    { value: 'none', label: 'Featured' },
+                    { value: 'low-to-high', label: 'Price: Low to High' },
+                    { value: 'high-to-low', label: 'Price: High to Low' }
+                  ]}
+                />
               </div>
 
               {/* Reset Filter Button */}

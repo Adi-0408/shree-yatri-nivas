@@ -4,6 +4,7 @@ import { StorageService } from '../services/storageService';
 import { PROPERTY_INFO } from '../services/seedData';
 import { RoomCard } from '../components/RoomCard';
 import { RoomDetailsModal } from '../components/RoomDetailsModal';
+import { CustomSelect } from '../components/CustomSelect';
 import { 
   Building, 
   Calendar, 
@@ -107,32 +108,32 @@ export const Home = () => {
                 <label className="form-label">
                   <Users size={15} color="var(--primary)" /> Guests / Devotees
                 </label>
-                <select
-                  className="form-control"
+                <CustomSelect
                   value={guests}
                   onChange={(e) => setGuests(e.target.value)}
-                >
-                  <option value="1">1 Person</option>
-                  <option value="2">2 Persons</option>
-                  <option value="3">3 Persons</option>
-                  <option value="4">4 Persons (Family)</option>
-                  <option value="5">5+ Persons (Group)</option>
-                </select>
+                  options={[
+                    { value: '1', label: '1 Person' },
+                    { value: '2', label: '2 Persons' },
+                    { value: '3', label: '3 Persons' },
+                    { value: '4', label: '4 Persons (Family)' },
+                    { value: '5', label: '5+ Persons (Group)' }
+                  ]}
+                />
               </div>
 
               <div className="form-group">
                 <label className="form-label">
                   <Flame size={15} color="var(--primary)" /> Room Category
                 </label>
-                <select
-                  className="form-control"
+                <CustomSelect
                   value={acPref}
                   onChange={(e) => setAcPref(e.target.value)}
-                >
-                  <option value="all">All Categories (AC & Non-AC)</option>
-                  <option value="AC">AC Rooms & Suites</option>
-                  <option value="Non-AC">Non-AC Budget Friendly</option>
-                </select>
+                  options={[
+                    { value: 'all', label: 'All Categories (AC & Non-AC)' },
+                    { value: 'AC', label: 'AC Rooms & Suites' },
+                    { value: 'Non-AC', label: 'Non-AC Budget Friendly' }
+                  ]}
+                />
               </div>
 
               <button type="submit" className="btn btn-primary btn-lg" style={{ height: '46px' }}>

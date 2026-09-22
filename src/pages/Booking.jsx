@@ -28,6 +28,7 @@ import {
   DollarSign,
   Lock
 } from 'lucide-react';
+import { CustomSelect } from '../components/CustomSelect';
 
 export const Booking = () => {
   const [searchParams] = useSearchParams();
@@ -91,6 +92,7 @@ export const Booking = () => {
   const [mobile, setMobile] = useState('');
   const [email, setEmail] = useState('');
   const [city, setCity] = useState('');
+  const [arrivalTime, setArrivalTime] = useState('Standard Check-in (12:00 PM - 03:00 PM)');
   const [specialRequests, setSpecialRequests] = useState('');
   const [agreeTerms, setAgreeTerms] = useState(true);
 
@@ -391,21 +393,18 @@ export const Booking = () => {
                     <label className="form-label">
                       <BedDouble size={15} color="var(--primary)" /> Choose Accommodation Category
                     </label>
-                    <select
-                      className="form-control"
+                    <CustomSelect
                       value={selectedRoomId}
                       onChange={(e) => {
                         const newId = e.target.value;
                         setSelectedRoomId(newId);
                         setRoomQty(1);
                       }}
-                    >
-                      {rooms.map((r) => (
-                        <option key={r.room_id} value={r.room_id}>
-                          {r.room_name} ({r.ac_status}) — ₹{r.price}/night ({r.total_quantity} Available, Max {r.capacity} Guests/room)
-                        </option>
-                      ))}
-                    </select>
+                      options={rooms.map((r) => ({
+                        value: r.room_id,
+                        label: `${r.room_name} (${r.ac_status}) — ₹{r.price}/night (${r.total_quantity} Available, Max ${r.capacity} Guests/room)`
+                      }))}
+                    />
                   </div>
 
                   {/* Dates */}
@@ -445,17 +444,14 @@ export const Booking = () => {
                         Available: {availability.remainingQty} of {availability.totalQty || selectedRoom?.total_quantity || 1}
                       </span>
                     </label>
-                    <select
-                      className="form-control"
+                    <CustomSelect
                       value={roomQty}
                       onChange={(e) => setRoomQty(parseInt(e.target.value, 10))}
-                    >
-                      {Array.from({ length: Math.max(1, availability.totalQty || selectedRoom?.total_quantity || 1) }, (_, i) => i + 1).map((qty) => (
-                        <option key={qty} value={qty}>
-                          {qty} Room{qty > 1 ? 's' : ''} (Max {(selectedRoom?.capacity || 4) * qty} Guests)
-                        </option>
-                      ))}
-                    </select>
+                      options={Array.from({ length: Math.max(1, availability.totalQty || selectedRoom?.total_quantity || 1) }, (_, i) => i + 1).map((qty) => ({
+                        value: qty,
+                        label: `${qty} Room${qty > 1 ? 's' : ''} (Max ${(selectedRoom?.capacity || 4) * qty} Guests)`
+                      }))}
+                    />
                   </div>
 
                   {/* Adults Counter */}
@@ -566,18 +562,16 @@ export const Booking = () => {
                                   {isFree ? 'FREE' : `+₹${pricingConfig.extra_person_rate}/nt`}
                                 </span>
                               </label>
-                              <select
-                                className="form-control"
+                              <CustomSelect
                                 value={age}
                                 onChange={(e) => handleChildAgeChange(idx, e.target.value)}
-                                style={{ fontSize: '0.85rem', padding: '0.4rem 0.6rem', minHeight: '38px' }}
                               >
                                 {Array.from({ length: 18 }, (_, a) => (
                                   <option key={a} value={a}>
                                     {a === 0 ? 'Under 1 yr (Infant)' : `${a} year${a > 1 ? 's' : ''} ${a <= (pricingConfig.child_age_free_limit ?? 4) ? '(Free)' : `(+₹${pricingConfig.extra_person_rate}/nt)`}`}
                                   </option>
                                 ))}
-                              </select>
+                              </CustomSelect>
                             </div>
                           );
                         })}
@@ -916,12 +910,15 @@ export const Booking = () => {
                     <label className="form-label">
                       <Clock size={15} color="var(--primary)" /> Estimated Arrival Time
                     </label>
-                    <select className="form-control">
-                      <option>Morning (08:00 AM - 12:00 PM)</option>
-                      <option>Standard Check-in (12:00 PM - 03:00 PM)</option>
-                      <option>Evening (03:00 PM - 08:00 PM)</option>
-                      <option>Late Night (After 08:00 PM)</option>
-                    </select>
+                    <CustomSelect
+                      value={arrivalTime}
+                      onChange={(e) => setArrivalTime(e.target.value)}
+                    >
+                      <option value="Morning (08:00 AM - 12:00 PM)">Morning (08:00 AM - 12:00 PM)</option>
+                      <option value="Standard Check-in (12:00 PM - 03:00 PM)">Standard Check-in (12:00 PM - 03:00 PM)</option>
+                      <option value="Evening (03:00 PM - 08:00 PM)">Evening (03:00 PM - 08:00 PM)</option>
+                      <option value="Late Night (After 08:00 PM)">Late Night (After 08:00 PM)</option>
+                    </CustomSelect>
                   </div>
 
                   <div className="form-group" style={{ gridColumn: '1 / -1' }}>

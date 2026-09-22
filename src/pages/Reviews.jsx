@@ -12,6 +12,7 @@ import {
   BedDouble, 
   Send 
 } from 'lucide-react';
+import { CustomSelect } from '../components/CustomSelect';
 
 export const Reviews = () => {
   const { showSuccess, showError } = useToast();
@@ -206,8 +207,7 @@ export const Reviews = () => {
                     <label className="form-label">
                       <BedDouble size={15} color="var(--primary)" /> Room Type Stayed In
                     </label>
-                    <select
-                      className="form-control"
+                    <CustomSelect
                       value={roomType}
                       onChange={(e) => setRoomType(e.target.value)}
                     >
@@ -216,7 +216,7 @@ export const Reviews = () => {
                       ) : (
                         <option value="Deluxe AC Family Suite">Deluxe AC Family Suite</option>
                       )}
-                    </select>
+                    </CustomSelect>
                   </div>
 
                   {/* Interactive Star Rating */}

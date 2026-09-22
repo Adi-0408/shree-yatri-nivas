@@ -27,6 +27,14 @@ export const AuthModal = () => {
   const [regCity, setRegCity] = useState('');
   const [regPassword, setRegPassword] = useState('');
 
+  useEffect(() => {
+    if (!isAuthModalOpen) return;
+    document.body.classList.add('modal-open');
+    return () => {
+      document.body.classList.remove('modal-open');
+    };
+  }, [isAuthModalOpen]);
+
   if (!isAuthModalOpen) return null;
 
   const handleLoginSubmit = async (e) => {
