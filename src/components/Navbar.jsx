@@ -85,15 +85,15 @@ export const Navbar = () => {
               >
                 <User size={16} color="var(--primary)" />
                 <span style={{ maxWidth: '110px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {customer.name.split(' ')[0]}
+                  {(customer?.name || 'Devotee').split(' ')[0]}
                 </span>
               </button>
 
               {dropdownOpen && (
                 <div className="syn-dropdown-menu">
                   <div className="syn-dropdown-header">
-                    <div className="syn-dropdown-name">{customer.name}</div>
-                    <div className="syn-dropdown-sub">{customer.mobile}</div>
+                    <div className="syn-dropdown-name">{customer?.name || 'Devotee'}</div>
+                    <div className="syn-dropdown-sub">{customer?.mobile || ''}</div>
                   </div>
                   <div className="syn-dropdown-body">
                     <button

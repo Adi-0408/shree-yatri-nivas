@@ -24,7 +24,8 @@ import {
   Phone,
   Mail,
   User,
-  Search
+  Search,
+  DollarSign
 } from 'lucide-react';
 
 export const Booking = () => {
@@ -253,7 +254,7 @@ export const Booking = () => {
       `*Check-in:* ${b.check_in} (12:00 PM)\n` +
       `*Check-out:* ${b.check_out} (11:00 AM)\n` +
       `*Total Nights:* ${b.number_of_nights}\n` +
-      `*Total Payable:* ₹${b.total_amount.toLocaleString('en-IN')} (Pay at Property)\n\n` +
+      `*Total Payable:* ₹${(b.total_amount || 0).toLocaleString('en-IN')} (Pay at Property)\n\n` +
       `*Property Address:* ${PROPERTY_INFO.address}\n` +
       `*Help Desk:* ${PROPERTY_INFO.phone}`;
 
@@ -563,7 +564,7 @@ export const Booking = () => {
                           ₹{priceBreakdown.baseRate} × {priceBreakdown.roomQty} room × {priceBreakdown.numberOfNights} night{priceBreakdown.numberOfNights > 1 ? 's' : ''} (Includes up to {priceBreakdown.includedGuests} guests)
                         </div>
                       </span>
-                      <span style={{ fontWeight: 700 }}>₹{priceBreakdown.roomBaseCharge.toLocaleString('en-IN')}</span>
+                      <span style={{ fontWeight: 700 }}>₹{(priceBreakdown.roomBaseCharge || 0).toLocaleString('en-IN')}</span>
                     </div>
 
                     {/* Line 2: Extra Guest Charge */}
@@ -579,7 +580,7 @@ export const Booking = () => {
                         </div>
                       </span>
                       <span style={{ fontWeight: 700, color: priceBreakdown.extraGuests > 0 ? 'var(--primary)' : 'var(--text-main)' }}>
-                        {priceBreakdown.extraGuests > 0 ? `₹${priceBreakdown.extraGuestCharge.toLocaleString('en-IN')}` : '₹0'}
+                        {priceBreakdown.extraGuests > 0 ? `₹${(priceBreakdown.extraGuestCharge || 0).toLocaleString('en-IN')}` : '₹0'}
                       </span>
                     </div>
 
@@ -607,7 +608,7 @@ export const Booking = () => {
                     {/* Total Amount */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.25rem', fontWeight: 800 }}>
                       <span style={{ color: 'var(--text-main)' }}>Total Payable Amount:</span>
-                      <span style={{ color: 'var(--primary)' }}>₹{priceBreakdown.totalAmount.toLocaleString('en-IN')}</span>
+                      <span style={{ color: 'var(--primary)' }}>₹{(priceBreakdown.totalAmount || 0).toLocaleString('en-IN')}</span>
                     </div>
                     <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.35rem' }}>
                       ₹0 deposit required online. 100% payment collected at property check-in.
@@ -740,12 +741,12 @@ export const Booking = () => {
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem', color: 'var(--text-secondary)' }}>
                     <span>Room Base Charges (Up to {priceBreakdown.includedGuests} guests):</span>
-                    <span style={{ fontWeight: 600 }}>₹{priceBreakdown.roomBaseCharge.toLocaleString('en-IN')}</span>
+                    <span style={{ fontWeight: 600 }}>₹{(priceBreakdown.roomBaseCharge || 0).toLocaleString('en-IN')}</span>
                   </div>
                   {priceBreakdown.extraGuests > 0 && (
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem', color: 'var(--primary)' }}>
                       <span>Extra Guest Charges ({priceBreakdown.extraGuests} extra × ₹{priceBreakdown.extraPersonRate} × {priceBreakdown.numberOfNights}n):</span>
-                      <span style={{ fontWeight: 700 }}>+₹{priceBreakdown.extraGuestCharge.toLocaleString('en-IN')}</span>
+                      <span style={{ fontWeight: 700 }}>+₹{(priceBreakdown.extraGuestCharge || 0).toLocaleString('en-IN')}</span>
                     </div>
                   )}
                   {priceBreakdown.childrenUnder4 > 0 && (
@@ -757,7 +758,7 @@ export const Booking = () => {
                   <div style={{ height: '1px', backgroundColor: 'var(--gold-border)', margin: '0.65rem 0' }} />
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.15rem', fontWeight: 800 }}>
                     <span style={{ color: 'var(--text-main)' }}>Total Payable at Check-in:</span>
-                    <span style={{ color: 'var(--primary)' }}>₹{priceBreakdown.totalAmount.toLocaleString('en-IN')}</span>
+                    <span style={{ color: 'var(--primary)' }}>₹{(priceBreakdown.totalAmount || 0).toLocaleString('en-IN')}</span>
                   </div>
                   <div style={{ marginTop: '0.65rem', fontSize: '0.8rem', color: '#66420B' }}>
                     • Zero advance deposit required online. 100% payment via Cash or UPI at property front desk.
@@ -856,7 +857,7 @@ export const Booking = () => {
                 <div style={{ backgroundColor: 'var(--bg-primary)', padding: '1.25rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)', marginBottom: '1.5rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.35rem', fontSize: '0.85rem' }}>
                     <span>Room Base Tariff ({confirmedBooking.number_of_nights}N × ₹{confirmedBooking.room_rate}):</span>
-                    <span>₹{(confirmedBooking.base_charges || (confirmedBooking.room_rate * confirmedBooking.room_quantity * confirmedBooking.number_of_nights)).toLocaleString('en-IN')}</span>
+                    <span>₹{(confirmedBooking.base_charges || (confirmedBooking.room_rate * confirmedBooking.room_quantity * confirmedBooking.number_of_nights) || 0).toLocaleString('en-IN')}</span>
                   </div>
                   {(confirmedBooking.extra_charges > 0 || confirmedBooking.extra_guests > 0) && (
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.35rem', fontSize: '0.85rem', color: 'var(--primary)' }}>
@@ -871,7 +872,7 @@ export const Booking = () => {
                       <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Payment Method: Pay at Check-in (Cash / UPI)</div>
                     </div>
                     <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--primary)' }}>
-                      ₹{confirmedBooking.total_amount.toLocaleString('en-IN')}
+                      ₹{(confirmedBooking.total_amount || 0).toLocaleString('en-IN')}
                     </div>
                   </div>
                 </div>

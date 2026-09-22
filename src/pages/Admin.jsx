@@ -280,7 +280,7 @@ export const Admin = ({ initialTab }) => {
             Admin Privileges Required
           </h1>
           <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '1.5rem' }}>
-            You are currently authenticated as <strong>{customer.name}</strong> (standard customer: <code>role: 'user'</code>). Administrative access to pricing and property inventory is strictly restricted.
+            You are currently authenticated as <strong>{customer?.name || 'Devotee'}</strong> (standard customer: <code>role: 'user'</code>). Administrative access to pricing and property inventory is strictly restricted.
           </p>
           <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
             <Link to="/" className="btn btn-outline">
