@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { StorageService } from '../services/storageService';
 import { PROPERTY_INFO } from '../services/seedData';
 import { useToast } from '../context/ToastContext';
 import { 
@@ -30,6 +31,12 @@ export const Contact = () => {
       showError('Please fill in your name, mobile, and inquiry message.');
       return;
     }
+    StorageService.saveContactMessage({
+      name: name.trim(),
+      mobile: mobile.trim(),
+      message: message.trim(),
+      roomType: subject
+    });
     showSuccess('Thank you for contacting us! Front desk staff will respond to your inquiry shortly.');
     setName('');
     setMobile('');

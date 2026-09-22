@@ -1,4 +1,30 @@
 import { DEFAULT_ROOMS, DEFAULT_BOOKINGS, DEFAULT_REVIEWS, DEFAULT_CUSTOMERS, DEFAULT_PRICING_CONFIG } from './seedData.js';
+import { db } from './firebase.js';
+import {
+  collection,
+  doc,
+  getDocs,
+  getDoc,
+  setDoc,
+  updateDoc,
+  deleteDoc,
+  onSnapshot
+} from 'firebase/firestore';
+
+function cleanForFirestore(obj) {
+  if (!obj || typeof obj !== 'object') return obj;
+  const cleaned = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (value !== undefined) {
+      if (value && typeof value === 'object' && !Array.isArray(value) && !(value instanceof Date)) {
+        cleaned[key] = cleanForFirestore(value);
+      } else {
+        cleaned[key] = value;
+      }
+    }
+  }
+  return cleaned;
+}
 
 const STORAGE_KEYS = {
   ROOMS: "syn_rooms_v1",
@@ -7,10 +33,13 @@ const STORAGE_KEYS = {
   ADMIN_LOGGED_IN: "syn_admin_auth_v1",
   CUSTOMERS: "syn_customers_v1",
   CURRENT_CUSTOMER: "syn_current_customer_v1",
-  PRICING_CONFIG: "syn_pricing_config_v2"
+  PRICING_CONFIG: "syn_pricing_config_v2",
+  INQUIRIES: "syn_inquiries_v1"
 };
 
 export const StorageService = {
+  firestoreInitialized: false,
+
   init() {
     if (typeof window === "undefined") return;
     const storedRooms = localStorage.getItem(STORAGE_KEYS.ROOMS);
@@ -28,6 +57,100 @@ export const StorageService = {
     }
     if (!localStorage.getItem(STORAGE_KEYS.PRICING_CONFIG)) {
       localStorage.setItem(STORAGE_KEYS.PRICING_CONFIG, JSON.stringify(DEFAULT_PRICING_CONFIG));
+    }
+
+    // Initialize real-time Cloud Firestore synchronization
+    this.initFirestore();
+  },
+
+  async initFirestore() {
+    if (this.firestoreInitialized || typeof window === "undefined" || !db) return;
+    this.firestoreInitialized = true;
+
+    try {
+      // 1. Sync & listen to pricing_config
+      const pricingRef = doc(db, "settings", "pricing_config");
+      onSnapshot(pricingRef, (docSnap) => {
+        if (docSnap.exists()) {
+          const cloudConfig = docSnap.data();
+          localStorage.setItem(STORAGE_KEYS.PRICING_CONFIG, JSON.stringify(cloudConfig));
+          window.dispatchEvent(new CustomEvent("syn_pricing_updated", { detail: cloudConfig }));
+        } else {
+          // Auto-seed pricing config to Firestore if empty
+          const localConfig = this.getPricingConfig();
+          setDoc(pricingRef, cleanForFirestore(localConfig)).catch(err => {
+            console.warn("Firestore pricing auto-seed:", err.message);
+          });
+        }
+      }, (err) => {
+        console.warn("Firestore pricing listener:", err.message);
+      });
+
+      // 2. Sync & listen to rooms
+      const roomsRef = collection(db, "rooms");
+      onSnapshot(roomsRef, (snapshot) => {
+        if (!snapshot.empty) {
+          const cloudRooms = [];
+          snapshot.forEach(d => cloudRooms.push({ ...d.data(), room_id: d.id }));
+          localStorage.setItem(STORAGE_KEYS.ROOMS, JSON.stringify(cloudRooms));
+          window.dispatchEvent(new CustomEvent("syn_rooms_updated", { detail: cloudRooms }));
+          window.dispatchEvent(new CustomEvent("syn_pricing_updated"));
+        } else {
+          // Auto-seed rooms to Firestore if empty
+          const localRooms = this.getRooms(true);
+          localRooms.forEach(room => {
+            setDoc(doc(db, "rooms", room.room_id), cleanForFirestore(room)).catch(err => {
+              console.warn("Firestore room auto-seed:", err.message);
+            });
+          });
+        }
+      }, (err) => {
+        console.warn("Firestore rooms listener:", err.message);
+      });
+
+      // 3. Sync & listen to bookings
+      const bookingsRef = collection(db, "bookings");
+      onSnapshot(bookingsRef, (snapshot) => {
+        if (!snapshot.empty) {
+          const cloudBookings = [];
+          snapshot.forEach(d => cloudBookings.push({ ...d.data(), booking_id: d.id }));
+          cloudBookings.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+          localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(cloudBookings));
+          window.dispatchEvent(new CustomEvent("syn_bookings_updated", { detail: cloudBookings }));
+        } else {
+          // Auto-seed initial bookings
+          const localBookings = this.getBookings();
+          localBookings.forEach(b => {
+            setDoc(doc(db, "bookings", b.booking_id), cleanForFirestore(b)).catch(err => {
+              console.warn("Firestore booking auto-seed:", err.message);
+            });
+          });
+        }
+      }, (err) => {
+        console.warn("Firestore bookings listener:", err.message);
+      });
+
+      // 4. Sync & listen to reviews
+      const reviewsRef = collection(db, "reviews");
+      onSnapshot(reviewsRef, (snapshot) => {
+        if (!snapshot.empty) {
+          const cloudReviews = [];
+          snapshot.forEach(d => cloudReviews.push({ ...d.data(), id: d.id }));
+          localStorage.setItem(STORAGE_KEYS.REVIEWS, JSON.stringify(cloudReviews));
+          window.dispatchEvent(new CustomEvent("syn_reviews_updated", { detail: cloudReviews }));
+        } else {
+          const localReviews = this.getReviews(true);
+          localReviews.forEach(r => {
+            setDoc(doc(db, "reviews", String(r.id)), cleanForFirestore(r)).catch(err => {
+              console.warn("Firestore review auto-seed:", err.message);
+            });
+          });
+        }
+      }, (err) => {
+        console.warn("Firestore reviews listener:", err.message);
+      });
+    } catch (err) {
+      console.warn("Firestore initialization warning:", err.message);
     }
   },
 
@@ -93,6 +216,13 @@ export const StorageService = {
     }
     localStorage.setItem(STORAGE_KEYS.ROOMS, JSON.stringify(rooms));
 
+    // Persist room to Cloud Firestore
+    if (db) {
+      setDoc(doc(db, "rooms", savedRoom.room_id), cleanForFirestore(savedRoom), { merge: true }).catch(err => {
+        console.warn("Firestore saveRoom error:", err.message);
+      });
+    }
+
     // Synchronize room updates into pricingConfig
     try {
       const config = this.getPricingConfig();
@@ -113,6 +243,13 @@ export const StorageService = {
         last_modified_at: new Date().toISOString()
       };
       localStorage.setItem(STORAGE_KEYS.PRICING_CONFIG, JSON.stringify(updatedConfig));
+
+      // Persist updated pricing to Cloud Firestore
+      if (db) {
+        setDoc(doc(db, "settings", "pricing_config"), cleanForFirestore(updatedConfig), { merge: true }).catch(err => {
+          console.warn("Firestore sync pricing error:", err.message);
+        });
+      }
 
       // Attempt async server sync if in dev environment
       if (typeof fetch !== "undefined") {
@@ -139,6 +276,14 @@ export const StorageService = {
     let rooms = this.getRooms(true);
     rooms = rooms.filter(r => r.room_id !== id);
     localStorage.setItem(STORAGE_KEYS.ROOMS, JSON.stringify(rooms));
+
+    // Delete room from Cloud Firestore
+    if (db) {
+      deleteDoc(doc(db, "rooms", id)).catch(err => {
+        console.warn("Firestore deleteRoom error:", err.message);
+      });
+    }
+
     if (typeof window !== "undefined") {
       window.dispatchEvent(new Event("syn_pricing_updated"));
     }
@@ -249,6 +394,14 @@ export const StorageService = {
     const bookings = this.getBookings();
     bookings.unshift(newBooking);
     localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(bookings));
+
+    // Persist booking to Cloud Firestore
+    if (db) {
+      setDoc(doc(db, "bookings", newBooking.booking_id), cleanForFirestore(newBooking), { merge: true }).catch(err => {
+        console.warn("Firestore createBooking error:", err.message);
+      });
+    }
+
     return newBooking;
   },
 
@@ -259,6 +412,17 @@ export const StorageService = {
       b.booking_status = newStatus;
       b.updated_at = new Date().toISOString();
       localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(bookings));
+
+      // Update in Cloud Firestore
+      if (db) {
+        updateDoc(doc(db, "bookings", bookingId), {
+          booking_status: newStatus,
+          updated_at: b.updated_at
+        }).catch(err => {
+          console.warn("Firestore updateBookingStatus error:", err.message);
+        });
+      }
+
       return true;
     }
     return false;
@@ -271,6 +435,17 @@ export const StorageService = {
       b.payment_status = newPaymentStatus;
       b.updated_at = new Date().toISOString();
       localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(bookings));
+
+      // Update in Cloud Firestore
+      if (db) {
+        updateDoc(doc(db, "bookings", bookingId), {
+          payment_status: newPaymentStatus,
+          updated_at: b.updated_at
+        }).catch(err => {
+          console.warn("Firestore updatePaymentStatus error:", err.message);
+        });
+      }
+
       return true;
     }
     return false;
@@ -301,6 +476,14 @@ export const StorageService = {
     };
     reviews.unshift(newReview);
     localStorage.setItem(STORAGE_KEYS.REVIEWS, JSON.stringify(reviews));
+
+    // Persist review to Cloud Firestore
+    if (db) {
+      setDoc(doc(db, "reviews", String(newReview.id)), cleanForFirestore(newReview), { merge: true }).catch(err => {
+        console.warn("Firestore addReview error:", err.message);
+      });
+    }
+
     return newReview;
   },
 
@@ -310,6 +493,17 @@ export const StorageService = {
     if (r) {
       r.status = "approved";
       localStorage.setItem(STORAGE_KEYS.REVIEWS, JSON.stringify(reviews));
+
+      // Update review status in Cloud Firestore
+      if (db) {
+        updateDoc(doc(db, "reviews", String(id)), {
+          status: "approved",
+          updated_at: new Date().toISOString()
+        }).catch(err => {
+          console.warn("Firestore approveReview error:", err.message);
+        });
+      }
+
       return true;
     }
     return false;
@@ -319,6 +513,13 @@ export const StorageService = {
     let reviews = this.getReviews(true);
     reviews = reviews.filter(r => r.id !== id);
     localStorage.setItem(STORAGE_KEYS.REVIEWS, JSON.stringify(reviews));
+
+    // Delete review from Cloud Firestore
+    if (db) {
+      deleteDoc(doc(db, "reviews", String(id))).catch(err => {
+        console.warn("Firestore deleteReview error:", err.message);
+      });
+    }
   },
 
   // Admin Auth
@@ -444,6 +645,45 @@ export const StorageService = {
 
   customerLogout() {
     localStorage.removeItem(STORAGE_KEYS.CURRENT_CUSTOMER);
+  },
+
+  setCurrentCustomer(customer) {
+    if (customer) {
+      localStorage.setItem(STORAGE_KEYS.CURRENT_CUSTOMER, JSON.stringify(customer));
+    } else {
+      localStorage.removeItem(STORAGE_KEYS.CURRENT_CUSTOMER);
+    }
+  },
+
+  saveContactMessage(contactData) {
+    this.init();
+    const inquiries = JSON.parse(localStorage.getItem(STORAGE_KEYS.INQUIRIES) || "[]");
+    const newInquiry = {
+      id: `INQ-${Date.now()}`,
+      name: contactData.name || "Guest Devotee",
+      mobile: contactData.mobile || "",
+      message: contactData.message || "",
+      room_type: contactData.roomType || "General Inquiry",
+      created_at: new Date().toISOString()
+    };
+    inquiries.unshift(newInquiry);
+    localStorage.setItem(STORAGE_KEYS.INQUIRIES, JSON.stringify(inquiries));
+
+    if (db) {
+      setDoc(doc(db, "inquiries", newInquiry.id), cleanForFirestore(newInquiry), { merge: true }).catch(err => {
+        console.warn("Firestore saveContactMessage error:", err.message);
+      });
+    }
+    return newInquiry;
+  },
+
+  getContactMessages() {
+    this.init();
+    try {
+      return JSON.parse(localStorage.getItem(STORAGE_KEYS.INQUIRIES) || "[]");
+    } catch {
+      return [];
+    }
   },
 
   // Admin Dashboard Statistics
@@ -585,6 +825,18 @@ export const StorageService = {
       }
     });
     localStorage.setItem(STORAGE_KEYS.ROOMS, JSON.stringify(rooms));
+
+    // Persist pricing configuration & rooms to Cloud Firestore
+    if (db) {
+      setDoc(doc(db, "settings", "pricing_config"), cleanForFirestore(updatedConfig), { merge: true }).catch(err => {
+        console.warn("Firestore updatePricingConfig error:", err.message);
+      });
+      rooms.forEach(room => {
+        setDoc(doc(db, "rooms", room.room_id), cleanForFirestore(room), { merge: true }).catch(err => {
+          console.warn("Firestore sync room pricing error:", err.message);
+        });
+      });
+    }
 
     // Trigger window event for reactive UI updates
     if (typeof window !== "undefined") {
@@ -850,6 +1102,41 @@ export const StorageService = {
       hasSpecialDateRate,
       nightBreakdowns
     };
+  },
+
+  async syncAllToFirebase() {
+    if (!db) return { success: false, message: "Firestore database is not connected." };
+    try {
+      // 1. Pricing config
+      const config = this.getPricingConfig();
+      await setDoc(doc(db, "settings", "pricing_config"), cleanForFirestore(config), { merge: true });
+
+      // 2. Rooms
+      const rooms = this.getRooms(true);
+      for (const r of rooms) {
+        await setDoc(doc(db, "rooms", r.room_id), cleanForFirestore(r), { merge: true });
+      }
+
+      // 3. Bookings
+      const bookings = this.getBookings();
+      for (const b of bookings) {
+        await setDoc(doc(db, "bookings", b.booking_id), cleanForFirestore(b), { merge: true });
+      }
+
+      // 4. Reviews
+      const reviews = this.getReviews(true);
+      for (const rev of reviews) {
+        await setDoc(doc(db, "reviews", String(rev.id)), cleanForFirestore(rev), { merge: true });
+      }
+
+      return {
+        success: true,
+        message: `Cloud sync complete! Synced ${rooms.length} rooms, ${bookings.length} reservations, ${reviews.length} reviews, and tariffs to hotel-fad04.`
+      };
+    } catch (err) {
+      console.error("syncAllToFirebase error:", err);
+      return { success: false, message: err.message };
+    }
   },
 
   resetToDefaults() {

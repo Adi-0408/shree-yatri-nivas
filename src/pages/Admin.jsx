@@ -32,7 +32,9 @@ import {
   History,
   Info,
   Calendar,
-  CalendarRange
+  CalendarRange,
+  Cloud,
+  RefreshCw
 } from 'lucide-react';
 
 export const Admin = ({ initialTab }) => {
@@ -100,6 +102,40 @@ export const Admin = ({ initialTab }) => {
     setPricingConfig(pConfig);
     setPricingForm(pConfig);
   };
+
+  const [syncingCloud, setSyncingCloud] = useState(false);
+
+  const handleCloudSync = async () => {
+    setSyncingCloud(true);
+    try {
+      const res = await StorageService.syncAllToFirebase();
+      if (res.success) {
+        showSuccess(res.message);
+      } else {
+        showError(res.message || 'Cloud synchronization failed.');
+      }
+    } catch (err) {
+      showError(err.message || 'Error during cloud sync.');
+    } finally {
+      setSyncingCloud(false);
+      reloadData();
+    }
+  };
+
+  useEffect(() => {
+    reloadData();
+    const handleSync = () => reloadData();
+    window.addEventListener('syn_pricing_updated', handleSync);
+    window.addEventListener('syn_rooms_updated', handleSync);
+    window.addEventListener('syn_bookings_updated', handleSync);
+    window.addEventListener('syn_reviews_updated', handleSync);
+    return () => {
+      window.removeEventListener('syn_pricing_updated', handleSync);
+      window.removeEventListener('syn_rooms_updated', handleSync);
+      window.removeEventListener('syn_bookings_updated', handleSync);
+      window.removeEventListener('syn_reviews_updated', handleSync);
+    };
+  }, [isAdminLoggedIn]);
 
   const handleSavePricing = async (e) => {
     e.preventDefault();
@@ -433,12 +469,30 @@ export const Admin = ({ initialTab }) => {
     <div className="admin-layout syn-main-content">
       {/* Sidebar */}
       <aside className="admin-sidebar">
-        <div style={{ paddingBottom: '1.5rem', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-light)' }}>
+        <div style={{ paddingBottom: '1.25rem', marginBottom: '1.25rem', borderBottom: '1px solid var(--border-light)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <ShieldAlert size={20} color="var(--primary)" />
             <span style={{ fontWeight: 800, fontSize: '1.1rem' }}>ADMIN PORTAL</span>
           </div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Logged in as Front Desk Manager</div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>Front Desk &amp; Tariffs Manager</div>
+
+          {/* Cloud Firestore Live Status */}
+          <div style={{
+            marginTop: '0.75rem',
+            padding: '0.45rem 0.65rem',
+            borderRadius: 'var(--radius-sm)',
+            backgroundColor: 'var(--primary-light)',
+            border: '1px solid rgba(15, 58, 58, 0.15)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.45rem',
+            fontSize: '0.72rem',
+            color: 'var(--primary)',
+            fontWeight: 600
+          }}>
+            <span style={{ width: 7, height: 7, borderRadius: '50%', backgroundColor: '#15803D', display: 'inline-block' }} />
+            <span>Firebase: hotel-fad04 (Live)</span>
+          </div>
         </div>
 
         <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', flex: 1 }}>
@@ -446,7 +500,7 @@ export const Admin = ({ initialTab }) => {
             onClick={() => setActiveTab('dashboard')}
             className={`admin-nav-item ${activeTab === 'dashboard' ? 'active' : ''}`}
           >
-            <LayoutDashboard size={18} /> Overview & KPIs
+            <LayoutDashboard size={18} /> Overview &amp; KPIs
           </button>
           <button
             onClick={() => setActiveTab('bookings')}
@@ -464,7 +518,7 @@ export const Admin = ({ initialTab }) => {
             onClick={() => setActiveTab('pricing')}
             className={`admin-nav-item ${activeTab === 'pricing' ? 'active' : ''}`}
           >
-            <Sliders size={18} /> Pricing & Inventory
+            <Sliders size={18} /> Pricing &amp; Inventory
           </button>
           <button
             onClick={() => setActiveTab('reviews')}
@@ -481,6 +535,16 @@ export const Admin = ({ initialTab }) => {
         </nav>
 
         <div style={{ paddingTop: '1.5rem', borderTop: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          <button
+            onClick={handleCloudSync}
+            disabled={syncingCloud}
+            className="btn btn-secondary btn-sm"
+            style={{ width: '100%', justifyContent: 'flex-start' }}
+            title="Sync all local data to Cloud Firestore (hotel-fad04)"
+          >
+            <Cloud size={15} color="var(--primary)" />
+            <span>{syncingCloud ? 'Syncing to Cloud...' : 'Sync to Firestore'}</span>
+          </button>
           <button
             onClick={handleResetSeedData}
             className="btn btn-secondary btn-sm"
