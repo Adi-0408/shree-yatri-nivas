@@ -1,4 +1,4 @@
-import { DEFAULT_ROOMS, DEFAULT_BOOKINGS, DEFAULT_REVIEWS, DEFAULT_CUSTOMERS, DEFAULT_PRICING_CONFIG } from './seedData';
+import { DEFAULT_ROOMS, DEFAULT_BOOKINGS, DEFAULT_REVIEWS, DEFAULT_CUSTOMERS, DEFAULT_PRICING_CONFIG } from './seedData.js';
 
 const STORAGE_KEYS = {
   ROOMS: "syn_rooms_v1",
@@ -14,7 +14,7 @@ export const StorageService = {
   init() {
     if (typeof window === "undefined") return;
     const storedRooms = localStorage.getItem(STORAGE_KEYS.ROOMS);
-    if (!storedRooms || storedRooms.includes("SYN-RM-101")) {
+    if (!storedRooms) {
       localStorage.setItem(STORAGE_KEYS.ROOMS, JSON.stringify(DEFAULT_ROOMS));
     }
     if (!localStorage.getItem(STORAGE_KEYS.BOOKINGS)) {
@@ -48,19 +48,34 @@ export const StorageService = {
   },
 
   saveRoom(roomData) {
+    this.init();
     const rooms = this.getRooms(true);
     const existingIndex = rooms.findIndex(r => r.room_id === roomData.room_id);
+    const parsedPrice = parseFloat(roomData.price) || 0;
+    const parsedCapacity = parseInt(roomData.capacity, 10) || 4;
+    const parsedQty = parseInt(roomData.total_quantity, 10) || 1;
+
+    let savedRoom;
     if (existingIndex >= 0) {
-      rooms[existingIndex] = { ...rooms[existingIndex], ...roomData, updated_at: new Date().toISOString() };
+      savedRoom = {
+        ...rooms[existingIndex],
+        ...roomData,
+        price: parsedPrice,
+        capacity: parsedCapacity,
+        total_quantity: parsedQty,
+        available_quantity: parsedQty,
+        updated_at: new Date().toISOString()
+      };
+      rooms[existingIndex] = savedRoom;
     } else {
-      const newId = roomData.room_id || `SYN-RM-${100 + rooms.length + 1}`;
+      const newId = roomData.room_id || `SYN-RM-${Date.now().toString().slice(-4)}`;
       const defaultAmenities = [
         "Free High-Speed Wi-Fi",
         "24/7 Hot Water Geyser",
         "Daily Housekeeping",
         "Purified RO Drinking Water"
       ];
-      rooms.push({
+      savedRoom = {
         amenities: defaultAmenities,
         badge: "Popular Stay",
         rating: 4.8,
@@ -68,11 +83,55 @@ export const StorageService = {
         images: ["https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1200&q=80"],
         ...roomData,
         room_id: newId,
-        available_quantity: parseInt(roomData.total_quantity, 10) || 5,
+        price: parsedPrice,
+        capacity: parsedCapacity,
+        total_quantity: parsedQty,
+        available_quantity: parsedQty,
         created_at: new Date().toISOString()
-      });
+      };
+      rooms.push(savedRoom);
     }
     localStorage.setItem(STORAGE_KEYS.ROOMS, JSON.stringify(rooms));
+
+    // Synchronize room updates into pricingConfig
+    try {
+      const config = this.getPricingConfig();
+      const acKey = savedRoom.ac_status === "Non-AC" ? "Non-AC" : "AC";
+      const updatedConfig = {
+        ...config,
+        base_rates: {
+          ...config.base_rates,
+          [acKey]: parsedPrice
+        },
+        inventory: {
+          ...config.inventory,
+          [acKey]: {
+            total_rooms: parsedQty,
+            active: savedRoom.status === "active"
+          }
+        },
+        last_modified_at: new Date().toISOString()
+      };
+      localStorage.setItem(STORAGE_KEYS.PRICING_CONFIG, JSON.stringify(updatedConfig));
+
+      // Attempt async server sync if in dev environment
+      if (typeof fetch !== "undefined") {
+        fetch('/api/admin/pricing', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' },
+          body: JSON.stringify({ ...updatedConfig, adminUser: "Admin" })
+        }).catch(() => {});
+      }
+
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("syn_pricing_updated", { detail: updatedConfig }));
+      }
+    } catch {
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("syn_pricing_updated"));
+      }
+    }
+
     return true;
   },
 
@@ -80,24 +139,33 @@ export const StorageService = {
     let rooms = this.getRooms(true);
     rooms = rooms.filter(r => r.room_id !== id);
     localStorage.setItem(STORAGE_KEYS.ROOMS, JSON.stringify(rooms));
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("syn_pricing_updated"));
+    }
   },
 
   // Availability calculation (Prevents double booking across overlapping dates)
   checkRoomAvailability(roomId, checkInDateStr, checkOutDateStr, requestedQty = 1) {
     const room = this.getRoomById(roomId);
     if (!room || room.status !== "active") {
-      return { available: false, remainingQty: 0, reason: "Room not found or inactive" };
+      return { available: false, remainingQty: 0, totalQty: 0, bookedQty: 0, reason: "Room not found or inactive" };
     }
 
+    const config = this.getPricingConfig();
+    const configQty = config.inventory?.[room.ac_status]?.total_rooms;
+    const totalQty = typeof room.total_quantity === "number" && room.total_quantity > 0
+      ? room.total_quantity
+      : (typeof configQty === "number" ? configQty : 1);
+
     if (!checkInDateStr || !checkOutDateStr) {
-      return { available: room.total_quantity >= requestedQty, remainingQty: room.total_quantity };
+      return { available: totalQty >= requestedQty, remainingQty: totalQty, totalQty, bookedQty: 0 };
     }
 
     const checkIn = new Date(checkInDateStr).getTime();
     const checkOut = new Date(checkOutDateStr).getTime();
 
     if (isNaN(checkIn) || isNaN(checkOut) || checkOut <= checkIn) {
-      return { available: false, remainingQty: 0, reason: "Invalid date range" };
+      return { available: false, remainingQty: 0, totalQty, bookedQty: 0, reason: "Invalid date range" };
     }
 
     const bookings = this.getBookings();
@@ -112,9 +180,6 @@ export const StorageService = {
       }
     });
 
-    const config = this.getPricingConfig();
-    const configQty = config.inventory?.[room.ac_status]?.total_rooms;
-    const totalQty = typeof configQty === "number" ? configQty : (room.total_quantity || 1);
     const remaining = Math.max(0, totalQty - bookedRoomsCount);
 
     return {

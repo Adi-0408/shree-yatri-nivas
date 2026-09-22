@@ -46,9 +46,9 @@ export const RoomDetailsModal = ({ room, onClose }) => {
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem', flexWrap: 'wrap' }}>
               <span className="badge-pill-surface">{room.room_type}</span>
               <span className="badge-pill-accent">{room.ac_status}</span>
-              {room.total_rooms && (
+              {(room.total_quantity || room.total_rooms) && (
                 <span className="badge-pill-muted">
-                  {room.total_rooms} {room.ac_status} Rooms
+                  {room.total_quantity || room.total_rooms} {room.ac_status} Rooms
                 </span>
               )}
             </div>

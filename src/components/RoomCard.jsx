@@ -34,7 +34,7 @@ export const RoomCard = ({ room, onOpenDetails }) => {
           backgroundColor: room.ac_status === 'AC' ? 'rgba(15, 58, 58, 0.9)' : 'rgba(51, 65, 85, 0.9)',
           boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
         }}>
-          {room.ac_status === 'AC' ? '❄️ 3 AC Rooms' : '💨 2 Non-AC Rooms'}
+          {room.ac_status === 'AC' ? `❄️ ${room.total_quantity || 1} AC Rooms` : `💨 ${room.total_quantity || 1} Non-AC Rooms`}
         </div>
       </div>
 
@@ -45,12 +45,10 @@ export const RoomCard = ({ room, onOpenDetails }) => {
         
         {/* Soft Pill Badges */}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.45rem', marginBottom: '0.85rem' }}>
-          {room.ac_status === 'AC' ? (
-            <span className="badge-pill-accent">3 AC Rooms Available</span>
-          ) : (
-            <span className="badge-pill-surface">2 Non-AC Rooms Available</span>
-          )}
-          <span className="badge-pill-muted">Max 2 Persons Base</span>
+          <span className={room.ac_status === 'AC' ? "badge-pill-accent" : "badge-pill-surface"}>
+            {room.total_quantity || 1} {room.ac_status} Room{(room.total_quantity || 1) > 1 ? 's' : ''} Available
+          </span>
+          <span className="badge-pill-muted">Max {room.base_capacity || 2} Persons Base</span>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#B45309', fontWeight: 700, marginLeft: 'auto', fontSize: '0.82rem' }}>
             <Star size={14} fill="#D97706" color="#D97706" /> {room.rating || 4.8} ({room.reviews_count || 24})
           </span>

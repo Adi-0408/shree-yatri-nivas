@@ -118,11 +118,24 @@ export const Booking = () => {
 
     const handlePricingSync = (e) => {
       setPricingConfig(e.detail || StorageService.getPricingConfig());
-      setRooms(StorageService.getRooms());
+      const updatedRooms = StorageService.getRooms();
+      setRooms(updatedRooms);
+      setSelectedRoomId((prevId) => {
+        if (updatedRooms.some(r => r.room_id === prevId)) return prevId;
+        return updatedRooms[0]?.room_id || prevId;
+      });
     };
     window.addEventListener('syn_pricing_updated', handlePricingSync);
     return () => window.removeEventListener('syn_pricing_updated', handlePricingSync);
   }, [searchParams]);
+
+  // Ensure roomQty is within current selected room inventory
+  useEffect(() => {
+    const maxRooms = selectedRoom?.total_quantity || availability.totalQty || 1;
+    if (roomQty > maxRooms) {
+      setRoomQty(Math.max(1, maxRooms));
+    }
+  }, [selectedRoom, availability.totalQty, roomQty]);
 
   // Autofill customer data if logged in
   useEffect(() => {
@@ -197,12 +210,9 @@ export const Booking = () => {
       return;
     }
     if (!availability.available || roomQty > availability.remainingQty) {
-      const msg = selectedRoom?.ac_status === 'AC' && roomQty > 3
-        ? 'Only 3 AC rooms available for these dates.'
-        : selectedRoom?.ac_status === 'Non-AC' && roomQty > 2
-        ? 'Only 2 Non-AC rooms available for these dates.'
-        : `Only ${availability.remainingQty} room(s) available for selected dates. Please adjust.`;
-      showError(msg);
+      const totalAvail = availability.remainingQty;
+      const totalInv = availability.totalQty || selectedRoom?.total_quantity || 1;
+      showError(`Only ${totalAvail} ${selectedRoom?.room_name || 'room'}(s) available for selected dates (Total inventory: ${totalInv}). Please adjust.`);
       return;
     }
 
@@ -384,11 +394,15 @@ export const Booking = () => {
                     <select
                       className="form-control"
                       value={selectedRoomId}
-                      onChange={(e) => setSelectedRoomId(e.target.value)}
+                      onChange={(e) => {
+                        const newId = e.target.value;
+                        setSelectedRoomId(newId);
+                        setRoomQty(1);
+                      }}
                     >
                       {rooms.map((r) => (
                         <option key={r.room_id} value={r.room_id}>
-                          {r.room_name} ({r.ac_status}) — ₹{r.price}/night (Max {r.capacity} Guests)
+                          {r.room_name} ({r.ac_status}) — ₹{r.price}/night ({r.total_quantity} Available, Max {r.capacity} Guests/room)
                         </option>
                       ))}
                     </select>
@@ -428,7 +442,7 @@ export const Booking = () => {
                     <label className="form-label" style={{ justifyContent: 'space-between' }}>
                       <span><BedDouble size={15} color="var(--primary)" /> Number of Rooms</span>
                       <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                        Available: {availability.remainingQty} of {selectedRoom?.ac_status === 'AC' ? 3 : 2}
+                        Available: {availability.remainingQty} of {availability.totalQty || selectedRoom?.total_quantity || 1}
                       </span>
                     </label>
                     <select
@@ -436,9 +450,9 @@ export const Booking = () => {
                       value={roomQty}
                       onChange={(e) => setRoomQty(parseInt(e.target.value, 10))}
                     >
-                      {Array.from({ length: selectedRoom?.ac_status === 'AC' ? 3 : 2 }, (_, i) => i + 1).map((qty) => (
+                      {Array.from({ length: Math.max(1, availability.totalQty || selectedRoom?.total_quantity || 1) }, (_, i) => i + 1).map((qty) => (
                         <option key={qty} value={qty}>
-                          {qty} Room{qty > 1 ? 's' : ''} (Max {4 * qty} Guests)
+                          {qty} Room{qty > 1 ? 's' : ''} (Max {(selectedRoom?.capacity || 4) * qty} Guests)
                         </option>
                       ))}
                     </select>
@@ -475,8 +489,8 @@ export const Booking = () => {
                       <button
                         type="button"
                         className="counter-btn"
-                        disabled={adults >= Math.min(12, 4 * roomQty)}
-                        onClick={() => setAdults(prev => Math.min(Math.min(12, 4 * roomQty), prev + 1))}
+                        disabled={adults >= Math.min(30, (selectedRoom?.capacity || 4) * roomQty)}
+                        onClick={() => setAdults(prev => Math.min(Math.min(30, (selectedRoom?.capacity || 4) * roomQty), prev + 1))}
                         aria-label="Increase adults"
                       >
                         +
@@ -517,8 +531,8 @@ export const Booking = () => {
                       <button
                         type="button"
                         className="counter-btn"
-                        disabled={childrenCount >= (4 * roomQty)}
-                        onClick={() => handleChildrenCountChange(Math.min(4 * roomQty, childrenCount + 1))}
+                        disabled={childrenCount >= ((selectedRoom?.capacity || 4) * roomQty)}
+                        onClick={() => handleChildrenCountChange(Math.min((selectedRoom?.capacity || 4) * roomQty, childrenCount + 1))}
                         aria-label="Increase children"
                       >
                         +
@@ -576,11 +590,7 @@ export const Booking = () => {
                     <div style={{ gridColumn: '1 / -1', padding: '0.75rem 1rem', borderRadius: 'var(--radius-sm)', backgroundColor: '#FEF2F2', border: '1px solid #FCA5A5', color: '#B91C1C', fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                       <AlertCircle size={16} />
                       <span>
-                        {selectedRoom?.ac_status === 'AC' && roomQty > 3
-                          ? 'Only 3 AC rooms available for these dates.'
-                          : selectedRoom?.ac_status === 'Non-AC' && roomQty > 2
-                          ? 'Only 2 Non-AC rooms available for these dates.'
-                          : `Only ${availability.remainingQty} ${selectedRoom?.ac_status || ''} room(s) available for these dates.`}
+                        {`Only ${availability.remainingQty} ${selectedRoom?.room_name || selectedRoom?.ac_status || ''} room(s) available for these dates (Total property inventory: ${availability.totalQty || selectedRoom?.total_quantity || 1}).`}
                       </span>
                     </div>
                   )}
@@ -595,10 +605,10 @@ export const Booking = () => {
                       <Info size={18} color="var(--primary)" />
                     )}
                     <div style={{ fontSize: '0.85rem', color: priceBreakdown.exceedsMaxCapacity ? 'var(--danger)' : 'var(--text-main)' }}>
-                      <strong>Occupancy:</strong> {priceBreakdown.totalGuests} / {priceBreakdown.maxAllowedGuests} Persons Max ({roomQty} Room(s) × 4 max)
+                      <strong>Occupancy:</strong> {priceBreakdown.totalGuests} / {priceBreakdown.maxAllowedGuests} Persons Max ({roomQty} Room(s) × {selectedRoom?.capacity || 4} max)
                       {priceBreakdown.exceedsMaxCapacity && (
                         <span style={{ fontWeight: 700, display: 'block', marginTop: '2px' }}>
-                          Limit exceeded! Maximum 4 persons per room. Please book an additional room.
+                          Limit exceeded! Maximum {selectedRoom?.capacity || 4} persons per room. Please book an additional room.
                         </span>
                       )}
                     </div>
