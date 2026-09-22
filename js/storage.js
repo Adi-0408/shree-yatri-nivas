@@ -42,7 +42,18 @@ const StorageService = {
       rooms[existingIndex] = { ...rooms[existingIndex], ...roomData, updated_at: new Date().toISOString() };
     } else {
       const newId = roomData.room_id || `SYN-RM-${100 + rooms.length + 1}`;
+      const defaultAmenities = [
+        "Free High-Speed Wi-Fi",
+        "24/7 Hot Water Geyser",
+        "Daily Housekeeping",
+        "Purified RO Drinking Water"
+      ];
       rooms.push({
+        amenities: defaultAmenities,
+        badge: "Popular Stay",
+        rating: 4.8,
+        reviews_count: 12,
+        images: ["https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1200&q=80"],
         ...roomData,
         room_id: newId,
         available_quantity: roomData.total_quantity || 5,
@@ -139,7 +150,7 @@ const StorageService = {
       booking_reference: ref,
       payment_method: "Pay at Property",
       payment_status: "Pending",
-      booking_status: "Pending",
+      booking_status: "Confirmed",
       created_at: new Date().toISOString()
     };
 
@@ -252,11 +263,19 @@ const StorageService = {
 
   customerLogin(identifier, password) {
     const customers = this.getCustomers();
-    const idClean = identifier.trim().toLowerCase();
-    const customer = customers.find(c => 
-      (c.email.toLowerCase() === idClean || (c.mobile && c.mobile.replace(/\D/g, "") === idClean.replace(/\D/g, ""))) &&
-      c.password === password.trim()
-    );
+    const idClean = (identifier || "").trim().toLowerCase();
+    const passClean = (password || "").trim();
+
+    if (!idClean || !passClean) {
+      return { success: false, message: "Please enter your email or mobile number and password." };
+    }
+
+    const digitsOnly = idClean.replace(/\D/g, "");
+    const customer = customers.find(c => {
+      const emailMatch = c.email && c.email.toLowerCase() === idClean;
+      const mobileMatch = digitsOnly.length >= 10 && c.mobile && c.mobile.replace(/\D/g, "") === digitsOnly;
+      return (emailMatch || mobileMatch) && c.password === passClean;
+    });
 
     if (customer) {
       const sessionData = {
@@ -274,12 +293,20 @@ const StorageService = {
 
   customerRegister(data) {
     const customers = this.getCustomers();
-    const emailClean = data.email.trim().toLowerCase();
-    const phoneClean = data.mobile.trim().replace(/\D/g, "");
+    const emailClean = (data.email || "").trim().toLowerCase();
+    const phoneClean = (data.mobile || "").trim().replace(/\D/g, "");
+
+    if (!data.name || !emailClean || !phoneClean || !data.password) {
+      return { success: false, message: "Please fill in all required registration fields." };
+    }
+
+    if (data.password.trim().length < 4) {
+      return { success: false, message: "Password must be at least 4 characters." };
+    }
 
     const exists = customers.some(c => 
-      c.email.toLowerCase() === emailClean || 
-      (c.mobile && c.mobile.replace(/\D/g, "") === phoneClean)
+      (c.email && c.email.toLowerCase() === emailClean) || 
+      (phoneClean.length >= 10 && c.mobile && c.mobile.replace(/\D/g, "") === phoneClean)
     );
 
     if (exists) {
@@ -292,7 +319,7 @@ const StorageService = {
       email: emailClean,
       mobile: data.mobile.trim(),
       password: data.password.trim(),
-      city: data.city ? data.city.trim() : "Guest",
+      city: data.city ? data.city.trim() : "Pandharpur Devotee",
       created_at: new Date().toISOString()
     };
 

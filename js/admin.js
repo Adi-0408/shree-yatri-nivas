@@ -48,7 +48,18 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Tab Navigation
+  // Tab Navigation & Dynamic Page Headings
+  const pageHeadingMap = {
+    dashboard: "Dashboard Overview",
+    bookings: "Guest Reservations Management",
+    rooms: "Rooms & Inventory Management",
+    reviews: "Customer Reviews Moderation",
+    reports: "Occupancy & Revenue Reports"
+  };
+
+  const pageHeadingEl = document.getElementById("page-heading");
+  const adminSidebar = document.getElementById("admin-sidebar");
+
   sidebarNavItems.forEach(item => {
     item.addEventListener("click", () => {
       const targetTab = item.getAttribute("data-tab");
@@ -65,6 +76,15 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       });
 
+      if (pageHeadingEl && pageHeadingMap[targetTab]) {
+        pageHeadingEl.textContent = pageHeadingMap[targetTab];
+      }
+
+      // Close mobile drawer if open
+      if (adminSidebar) {
+        adminSidebar.classList.remove("open");
+      }
+
       // Refresh specific tab data
       if (targetTab === "dashboard") loadDashboardData();
       if (targetTab === "rooms") renderRoomsTable();
@@ -72,6 +92,16 @@ document.addEventListener("DOMContentLoaded", () => {
       if (targetTab === "reviews") renderReviewsTable();
       if (targetTab === "reports") renderReports();
     });
+  });
+
+  // Close sidebar drawer when clicking outside on mobile
+  document.addEventListener("click", (e) => {
+    if (adminSidebar && adminSidebar.classList.contains("open")) {
+      const toggleBtn = document.getElementById("sidebar-toggle-btn");
+      if (!adminSidebar.contains(e.target) && (!toggleBtn || !toggleBtn.contains(e.target))) {
+        adminSidebar.classList.remove("open");
+      }
+    }
   });
 
   // Load Dashboard Data & KPIs
@@ -366,6 +396,11 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
+  window.closeVoucherModal = function () {
+    const modal = document.getElementById("admin-voucher-modal");
+    if (modal) modal.classList.remove("active");
+  };
+
   window.viewBookingVoucherModal = function (bookingId) {
     const b = StorageService.getBookingById(bookingId);
     if (!b) return;
@@ -380,12 +415,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     modal.innerHTML = `
       <div class="modal-card" style="max-width: 580px;">
-        <div class="modal-header">
-          <h3 class="modal-title">Booking Voucher: ${b.booking_id}</h3>
-          <button class="modal-close-btn" onclick="modal.classList.remove('active')">&times;</button>
+        <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center; padding:1.25rem 1.5rem; border-bottom:1px solid var(--line);">
+          <h3 class="modal-title" style="font-family:var(--font-serif); font-size:1.4rem; color:var(--ink);">Booking Voucher: ${b.booking_id}</h3>
+          <button class="modal-close-btn" style="position:static;" onclick="closeVoucherModal()">&times;</button>
         </div>
-        <div class="modal-body" style="font-size:0.92rem;line-height:1.7;">
-          <div style="background:#f8fafc;padding:1.25rem;border-radius:8px;border:1px solid #e2e8f0;margin-bottom:1.25rem;">
+        <div class="modal-body" style="padding:1.5rem; font-size:0.92rem; line-height:1.7;">
+          <div style="background:#f8fafc; padding:1.25rem; border-radius:8px; border:1px solid #e2e8f0; margin-bottom:1.25rem;">
             <p><strong>Property:</strong> SHREE YATRI NIVAS, Pandharpur</p>
             <p><strong>Guest Name:</strong> ${b.guest_name}</p>
             <p><strong>Contact:</strong> ${b.mobile} | ${b.email}</p>
@@ -394,11 +429,11 @@ document.addEventListener("DOMContentLoaded", () => {
             <p><strong>Total Amount:</strong> &#8377;${(b.total_amount || 0).toLocaleString('en-IN')}</p>
             <p><strong>Payment Status:</strong> <span class="badge ${b.payment_status === 'Paid' ? 'badge-paid' : 'badge-pending'}">${b.payment_status}</span> (${b.payment_method})</p>
             <p><strong>Booking Status:</strong> <span class="badge ${getStatusBadgeClass(b.booking_status)}">${b.booking_status}</span></p>
-            ${b.special_requests ? `<p style="margin-top:0.5rem;color:#b45309;"><strong>Special Requests:</strong> ${b.special_requests}</p>` : ''}
+            ${b.special_requests ? `<p style="margin-top:0.5rem; color:#b45309;"><strong>Special Requests:</strong> ${b.special_requests}</p>` : ''}
           </div>
-          <div style="display:flex;justify-content:flex-end;gap:0.75rem;">
-            <button class="btn btn-outline" onclick="window.print()">Print Voucher</button>
-            <button class="btn btn-navy" onclick="modal.classList.remove('active')">Close</button>
+          <div style="display:flex; justify-content:flex-end; gap:0.75rem;">
+            <button class="btn btn-outline" onclick="window.print()"><i class="fa-solid fa-print"></i> Print Voucher</button>
+            <button class="btn btn-navy" onclick="closeVoucherModal()">Close</button>
           </div>
         </div>
       </div>

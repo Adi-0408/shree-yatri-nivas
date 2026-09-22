@@ -61,7 +61,21 @@ document.addEventListener("DOMContentLoaded", () => {
   // Evaluate on load
   evaluateCustomerAuth();
 
-  // Populate rooms select dropdown
+  // Populate rooms select dropdown & Date Defaults
+  const todayStr = new Date().toISOString().split("T")[0];
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowStr = tomorrow.toISOString().split("T")[0];
+
+  if (checkInInput) {
+    checkInInput.min = todayStr;
+    if (!checkInInput.value) checkInInput.value = todayStr;
+  }
+  if (checkOutInput) {
+    checkOutInput.min = tomorrowStr;
+    if (!checkOutInput.value) checkOutInput.value = tomorrowStr;
+  }
+
   const rooms = StorageService.getRooms();
   if (roomSelect) {
     roomSelect.innerHTML = rooms.map(r => `
@@ -70,7 +84,7 @@ document.addEventListener("DOMContentLoaded", () => {
       </option>
     `).join("");
 
-    // Check query param for room pre-selection
+    // Check query param for room pre-selection & date query params
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has("room")) {
       const targetRoom = urlParams.get("room");
@@ -78,8 +92,12 @@ document.addEventListener("DOMContentLoaded", () => {
         roomSelect.value = targetRoom;
       }
     }
-    if (urlParams.has("check_in")) checkInInput.value = urlParams.get("check_in");
-    if (urlParams.has("check_out")) checkOutInput.value = urlParams.get("check_out");
+    if (urlParams.has("check_in") && urlParams.get("check_in")) {
+      checkInInput.value = urlParams.get("check_in");
+    }
+    if (urlParams.has("check_out") && urlParams.get("check_out")) {
+      checkOutInput.value = urlParams.get("check_out");
+    }
   }
 
   // Calculate & Refresh Pricing
@@ -90,14 +108,18 @@ document.addEventListener("DOMContentLoaded", () => {
     const room = StorageService.getRoomById(roomId);
     if (!room) return;
 
+    // Safety fallback for empty dates
+    if (!checkInInput.value) checkInInput.value = todayStr;
+    if (!checkOutInput.value) checkOutInput.value = tomorrowStr;
+
     const checkInDate = new Date(checkInInput.value);
     const checkOutDate = new Date(checkOutInput.value);
-    const qty = parseInt(roomQtyInput.value || 1, 10);
-    const adults = parseInt(adultsInput.value || 2, 10);
-    const children = parseInt(childrenInput.value || 0, 10);
+    const qty = Math.max(1, parseInt(roomQtyInput.value || 1, 10));
+    const adults = Math.max(1, parseInt(adultsInput.value || 2, 10));
+    const children = Math.max(0, parseInt(childrenInput.value || 0, 10));
 
     let nights = 1;
-    if (checkOutDate > checkInDate) {
+    if (!isNaN(checkInDate.getTime()) && !isNaN(checkOutDate.getTime()) && checkOutDate > checkInDate) {
       const diffTime = Math.abs(checkOutDate - checkInDate);
       nights = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     }
@@ -134,9 +156,30 @@ document.addEventListener("DOMContentLoaded", () => {
     return { room, nights, qty, adults, children, rate, total };
   }
 
-  // Event Listeners for Live Calculation
-  [roomSelect, checkInInput, checkOutInput, roomQtyInput, adultsInput, childrenInput].forEach(elem => {
-    if (elem) elem.addEventListener("change", calculatePricing);
+  // Event Listeners for Live Calculation & Date validation
+  if (checkInInput) {
+    checkInInput.addEventListener("change", () => {
+      const selected = new Date(checkInInput.value);
+      if (!isNaN(selected.getTime())) {
+        const nextDay = new Date(selected);
+        nextDay.setDate(nextDay.getDate() + 1);
+        const nextDayStr = nextDay.toISOString().split("T")[0];
+        if (checkOutInput) {
+          checkOutInput.min = nextDayStr;
+          if (!checkOutInput.value || new Date(checkOutInput.value) <= selected) {
+            checkOutInput.value = nextDayStr;
+          }
+        }
+      }
+      calculatePricing();
+    });
+  }
+
+  [roomSelect, checkOutInput, roomQtyInput, adultsInput, childrenInput].forEach(elem => {
+    if (elem) {
+      elem.addEventListener("change", calculatePricing);
+      elem.addEventListener("input", calculatePricing);
+    }
   });
 
   calculatePricing();

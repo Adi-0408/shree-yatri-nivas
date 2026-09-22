@@ -68,24 +68,26 @@ document.addEventListener("DOMContentLoaded", () => {
   tomorrow.setDate(tomorrow.getDate() + 1);
   const tomorrowStr = tomorrow.toISOString().split("T")[0];
 
-  const checkInInputs = document.querySelectorAll("input[name='check_in'], #check_in");
-  const checkOutInputs = document.querySelectorAll("input[name='check_out'], #check_out");
+  const checkInInputs = document.querySelectorAll("input[name='check_in'], #check_in, #book-check-in");
+  const checkOutInputs = document.querySelectorAll("input[name='check_out'], #check_out, #book-check-out");
 
   checkInInputs.forEach(input => {
     if (!input.value) input.value = todayStr;
     input.min = todayStr;
     input.addEventListener("change", () => {
       const selected = new Date(input.value);
-      const nextDay = new Date(selected);
-      nextDay.setDate(nextDay.getDate() + 1);
-      const nextDayStr = nextDay.toISOString().split("T")[0];
+      if (!isNaN(selected.getTime())) {
+        const nextDay = new Date(selected);
+        nextDay.setDate(nextDay.getDate() + 1);
+        const nextDayStr = nextDay.toISOString().split("T")[0];
 
-      checkOutInputs.forEach(outInput => {
-        outInput.min = nextDayStr;
-        if (new Date(outInput.value) <= selected) {
-          outInput.value = nextDayStr;
-        }
-      });
+        checkOutInputs.forEach(outInput => {
+          outInput.min = nextDayStr;
+          if (!outInput.value || new Date(outInput.value) <= selected) {
+            outInput.value = nextDayStr;
+          }
+        });
+      }
     });
   });
 
@@ -93,6 +95,23 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!input.value) input.value = tomorrowStr;
     input.min = tomorrowStr;
   });
+
+  // Inject Floating WhatsApp Concierge Button on customer pages
+  if (!document.querySelector(".floating-whatsapp-btn") && !window.location.pathname.includes("admin.html")) {
+    const floatBtn = document.createElement("a");
+    floatBtn.href = "#";
+    floatBtn.className = "floating-whatsapp-btn whatsapp-trigger";
+    floatBtn.setAttribute("aria-label", "Chat with Shree Yatri Nivas on WhatsApp");
+    floatBtn.setAttribute("title", "Need help? Chat with front desk on WhatsApp");
+    floatBtn.innerHTML = `<i class="fa-brands fa-whatsapp"></i>`;
+    floatBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      const message = encodeURIComponent("Namaste! I would like to inquire about room availability and booking at SHREE YATRI NIVAS.");
+      const whatsappUrl = `https://wa.me/${PROPERTY_INFO.whatsapp}?text=${message}`;
+      window.open(whatsappUrl, "_blank");
+    });
+    document.body.appendChild(floatBtn);
+  }
 
   // Render Customer Auth in Navbar
   window.renderCustomerNavState();
@@ -372,9 +391,21 @@ window.switchAuthTab = function (tab) {
 };
 
 window.fillDemoCustomer = function () {
-  document.getElementById("cust-login-id").value = "ramesh@example.com";
-  document.getElementById("cust-login-pass").value = "password123";
-  document.getElementById("customer-login-form").dispatchEvent(new Event("submit"));
+  const res = StorageService.customerLogin("ramesh@example.com", "password123");
+  if (res.success) {
+    window.closeCustomerAuthModal();
+    window.renderCustomerNavState();
+    window.showToast(`Logged in as demo guest: ${res.customer.name}`, "success");
+    if (typeof authModalCallback === "function") {
+      authModalCallback(res.customer);
+      authModalCallback = null;
+    }
+    if (typeof window.onCustomerAuthChanged === "function") {
+      window.onCustomerAuthChanged(res.customer);
+    }
+  } else {
+    window.showToast("Could not login to demo account.", "error");
+  }
 };
 
 // Global Toast Notification Helper
@@ -387,7 +418,7 @@ window.showToast = function (message, type = "success") {
   }
 
   const toast = document.createElement("div");
-  toast.className = `toast-message ${type}`;
+  toast.className = `toast ${type}`;
 
   const iconClass = type === "success" 
     ? "fa-circle-check" 
@@ -396,18 +427,19 @@ window.showToast = function (message, type = "success") {
       : "fa-circle-info";
 
   toast.innerHTML = `
-    <i class="fa-solid ${iconClass}"></i>
-    <div style="flex: 1;">${message}</div>
-    <button style="background:none;border:none;color:#94a3b8;cursor:pointer;" onclick="this.parentElement.remove()">
+    <i class="fa-solid ${iconClass}" style="font-size:1.1rem;"></i>
+    <div style="flex: 1; line-height: 1.4;">${message}</div>
+    <button style="background:none; border:none; color:rgba(255,255,255,0.7); cursor:pointer; padding:2px 4px;" onclick="this.parentElement.remove()">
       <i class="fa-solid fa-times"></i>
     </button>
   `;
 
   container.appendChild(toast);
-  setTimeout(() => toast.classList.add("show"), 20);
 
   setTimeout(() => {
-    toast.classList.remove("show");
-    setTimeout(() => toast.remove(), 400);
+    toast.style.opacity = "0";
+    toast.style.transform = "translateY(10px)";
+    toast.style.transition = "all 0.3s ease";
+    setTimeout(() => toast.remove(), 300);
   }, 4000);
 };

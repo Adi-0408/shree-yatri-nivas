@@ -7,16 +7,22 @@ const PORT = process.env.PORT || 3000;
 const PUBLIC_DIR = __dirname;
 
 const MIME_TYPES = {
-  '.html': 'text/html',
-  '.css': 'text/css',
-  '.js': 'text/javascript',
-  '.json': 'application/json',
+  '.html': 'text/html; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+  '.json': 'application/json; charset=utf-8',
   '.png': 'image/png',
   '.jpg': 'image/jpeg',
   '.jpeg': 'image/jpeg',
   '.svg': 'image/svg+xml',
   '.ico': 'image/x-icon',
-  '.webp': 'image/webp'
+  '.webp': 'image/webp',
+  '.woff2': 'font/woff2',
+  '.woff': 'font/woff',
+  '.ttf': 'font/ttf',
+  '.eot': 'application/vnd.ms-fontobject',
+  '.txt': 'text/plain; charset=utf-8',
+  '.xml': 'application/xml; charset=utf-8'
 };
 
 const server = http.createServer((req, res) => {
@@ -31,7 +37,7 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  const parsedUrl = new URL(req.url, `http://${req.headers.host}`);
+  const parsedUrl = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
   let pathname = parsedUrl.pathname;
 
   // Serve index.html for root
@@ -39,13 +45,26 @@ const server = http.createServer((req, res) => {
     pathname = '/index.html';
   }
 
-  // REST API Endpoints (Section 14 of specification)
+  // REST API Endpoints
   if (pathname.startsWith('/api/')) {
-    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
 
     if (pathname === '/api/health') {
       res.writeHead(200);
-      res.end(JSON.stringify({ status: 'UP', service: 'SHREE YATRI NIVAS REST API' }));
+      res.end(JSON.stringify({ status: 'UP', service: 'SHREE YATRI NIVAS REST API', timestamp: new Date().toISOString() }));
+      return;
+    }
+
+    if (pathname === '/api/info') {
+      res.writeHead(200);
+      res.end(JSON.stringify({
+        name: 'SHREE YATRI NIVAS',
+        tagline: 'Divine Comfort, Peaceful Lodging & Authentic Hospitality',
+        phone: '+91 98220 12345',
+        whatsapp: '919822012345',
+        email: 'info@shreeyatrinivas.com',
+        location: 'Station Road, Near Central Temple Gate, Pandharpur, Maharashtra - 413304'
+      }));
       return;
     }
 
@@ -57,7 +76,7 @@ const server = http.createServer((req, res) => {
           const data = JSON.parse(body || '{}');
           if (data.username === 'admin' && data.password === 'admin123') {
             res.writeHead(200);
-            res.end(JSON.stringify({ success: true, token: 'mock-jwt-token-syn-2026', role: 'ADMIN' }));
+            res.end(JSON.stringify({ success: true, token: 'syn-session-token-' + Date.now(), role: 'ADMIN' }));
           } else {
             res.writeHead(401);
             res.end(JSON.stringify({ success: false, message: 'Invalid admin credentials' }));
@@ -72,25 +91,27 @@ const server = http.createServer((req, res) => {
 
     // Default API fallback
     res.writeHead(200);
-    res.end(JSON.stringify({ message: `API endpoint ${pathname} ready.` }));
+    res.end(JSON.stringify({ message: `API endpoint ${pathname} is active.` }));
     return;
   }
 
-  // Static File Serving
-  const safePath = path.normalize(pathname).replace(/^(\.\.[\/\\])+/, '');
-  const filePath = path.join(PUBLIC_DIR, safePath);
+  // Static File Serving with extension fallback
+  let safePath = path.normalize(pathname).replace(/^(\.\.[\/\\])+/, '');
+  let filePath = path.join(PUBLIC_DIR, safePath);
 
+  // Check if requested file exists or if appending .html matches
   fs.stat(filePath, (err, stats) => {
     if (err || !stats.isFile()) {
-      res.writeHead(404, { 'Content-Type': 'text/html' });
-      res.end(`
-        <div style="font-family:sans-serif; text-align:center; padding: 4rem;">
-          <h1>404 - Page Not Found</h1>
-          <p>The requested file does not exist.</p>
-          <a href="/" style="color:#d97706; text-decoration:none; font-weight:bold;">Return to Home</a>
-        </div>
-      `);
-      return;
+      if (!path.extname(filePath)) {
+        const htmlAlternative = filePath + '.html';
+        if (fs.existsSync(htmlAlternative) && fs.statSync(htmlAlternative).isFile()) {
+          filePath = htmlAlternative;
+        } else {
+          return send404(res);
+        }
+      } else {
+        return send404(res);
+      }
     }
 
     const ext = path.extname(filePath).toLowerCase();
@@ -98,13 +119,36 @@ const server = http.createServer((req, res) => {
 
     res.writeHead(200, {
       'Content-Type': contentType,
-      'Cache-Control': 'no-cache'
+      'Cache-Control': ext === '.html' ? 'no-cache' : 'public, max-age=86400'
     });
 
     const stream = fs.createReadStream(filePath);
     stream.pipe(res);
   });
 });
+
+function send404(res) {
+  res.writeHead(404, { 'Content-Type': 'text/html; charset=utf-8' });
+  res.end(`
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <title>404 — Page Not Found | Shree Yatri Nivas</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <link rel="stylesheet" href="/css/style.css">
+    </head>
+    <body style="background:var(--paper); min-height:100vh; display:flex; align-items:center; justify-content:center; text-align:center; padding:2rem;">
+      <div style="background:#ffffff; border:1px solid var(--line); border-radius:var(--radius-xl); padding:3.5rem 2.5rem; max-width:480px; box-shadow:var(--shadow-md);">
+        <div style="font-size:3rem; color:var(--gold); margin-bottom:1rem;"><i class="fa-solid fa-hotel"></i></div>
+        <h1 style="font-family:var(--font-serif); font-size:2.4rem; color:var(--ink); margin-bottom:0.75rem;">Page Not Found</h1>
+        <p style="color:var(--muted); margin-bottom:2rem; font-size:0.95rem;">The page or resource you requested does not exist or has moved.</p>
+        <a href="/" class="btn btn-primary" style="padding:0.75rem 2rem;">Return to Home</a>
+      </div>
+    </body>
+    </html>
+  `);
+}
 
 server.listen(PORT, () => {
   console.log(`=======================================================`);
