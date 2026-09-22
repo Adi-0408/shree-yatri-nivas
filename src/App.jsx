@@ -30,6 +30,8 @@ export const App = () => {
         <Route path="/contact" element={<Contact />} />
         <Route path="/contact.html" element={<Contact />} />
         <Route path="/admin" element={<Admin />} />
+        <Route path="/admin/pricing" element={<Admin initialTab="pricing" />} />
+        <Route path="/admin/:tab" element={<Admin />} />
         <Route path="/admin.html" element={<Admin />} />
         <Route path="*" element={<NotFound />} />
       </Routes>

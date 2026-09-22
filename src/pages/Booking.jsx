@@ -47,9 +47,41 @@ export const Booking = () => {
   const [checkOut, setCheckOut] = useState(tomorrowStr);
   const [roomQty, setRoomQty] = useState(1);
   const [adults, setAdults] = useState(2);
-  const [childrenUnder4, setChildrenUnder4] = useState(0);
-  const [childrenAbove4, setChildrenAbove4] = useState(0);
+  const [childrenCount, setChildrenCount] = useState(0);
+  const [childrenAges, setChildrenAges] = useState([]);
   const [pricingConfig, setPricingConfig] = useState(StorageService.getPricingConfig());
+
+  // Children count and age handlers
+  const handleChildrenCountChange = (newVal) => {
+    const count = Math.max(0, parseInt(newVal, 10) || 0);
+    setChildrenCount(count);
+    setChildrenAges((prev) => {
+      if (count > prev.length) {
+        const added = Array.from({ length: count - prev.length }, () => 2);
+        return [...prev, ...added];
+      } else {
+        return prev.slice(0, count);
+      }
+    });
+  };
+
+  const handleChildAgeChange = (index, newAge) => {
+    setChildrenAges((prev) => {
+      const copy = [...prev];
+      copy[index] = Math.max(0, Math.min(17, parseInt(newAge, 10) || 0));
+      return copy;
+    });
+  };
+
+  const childrenUnder4 = useMemo(() => {
+    const limit = pricingConfig.child_age_free_limit ?? 4;
+    return childrenAges.filter((a) => Number(a) <= limit).length;
+  }, [childrenAges, pricingConfig.child_age_free_limit]);
+
+  const childrenAbove4 = useMemo(() => {
+    const limit = pricingConfig.child_age_free_limit ?? 4;
+    return childrenAges.filter((a) => Number(a) > limit).length;
+  }, [childrenAges, pricingConfig.child_age_free_limit]);
 
   // Form State - Step 2 (Guest Details)
   const [guestName, setGuestName] = useState('');
@@ -114,16 +146,17 @@ export const Booking = () => {
       roomQty,
       adults,
       childrenUnder4,
-      childrenAbove4
+      childrenAbove4,
+      childrenAges
     });
-  }, [selectedRoomId, selectedRoom, checkIn, checkOut, roomQty, adults, childrenUnder4, childrenAbove4, pricingConfig]);
+  }, [selectedRoomId, selectedRoom, checkIn, checkOut, roomQty, adults, childrenUnder4, childrenAbove4, childrenAges, pricingConfig]);
 
   const numberOfNights = priceBreakdown.numberOfNights;
   const totalAmount = priceBreakdown.totalAmount;
 
   // Overlap availability check
   const availability = useMemo(() => {
-    if (!selectedRoomId || !checkIn || !checkOut) return { available: true, remainingQty: 1 };
+    if (!selectedRoomId || !checkIn || !checkOut) return { available: true, remainingQty: 1, totalQty: 1 };
     return StorageService.checkRoomAvailability(selectedRoomId, checkIn, checkOut, roomQty);
   }, [selectedRoomId, checkIn, checkOut, roomQty]);
 
@@ -142,8 +175,13 @@ export const Booking = () => {
       showError(`Occupancy limit exceeded: Maximum 4 persons allowed per room (${priceBreakdown.maxAllowedGuests} guests for ${roomQty} room(s)). Please add another room.`);
       return;
     }
-    if (!availability.available) {
-      showError(`Only ${availability.remainingQty} room(s) available for selected dates. Please adjust.`);
+    if (!availability.available || roomQty > availability.remainingQty) {
+      const msg = selectedRoom?.ac_status === 'AC' && roomQty > 3
+        ? 'Only 3 AC rooms available for these dates.'
+        : selectedRoom?.ac_status === 'Non-AC' && roomQty > 2
+        ? 'Only 2 Non-AC rooms available for these dates.'
+        : `Only ${availability.remainingQty} room(s) available for selected dates. Please adjust.`;
+      showError(msg);
       return;
     }
     setStep(2);
@@ -174,6 +212,7 @@ export const Booking = () => {
         children: priceBreakdown.childrenUnder4 + priceBreakdown.childrenAbove4,
         children_under_4: priceBreakdown.childrenUnder4,
         children_above_4: priceBreakdown.childrenAbove4,
+        children_ages: childrenAges,
         total_guests: priceBreakdown.totalGuests,
         included_guests: priceBreakdown.includedGuests,
         extra_guests: priceBreakdown.extraGuests,
@@ -349,17 +388,22 @@ export const Booking = () => {
 
                   {/* Quantity & Guests */}
                   <div className="form-group">
-                    <label className="form-label">
-                      <BedDouble size={15} color="var(--primary)" /> Number of Rooms
+                    <label className="form-label" style={{ justifyContent: 'space-between' }}>
+                      <span><BedDouble size={15} color="var(--primary)" /> Number of Rooms</span>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                        Available: {availability.remainingQty} of {selectedRoom?.ac_status === 'AC' ? 3 : 2}
+                      </span>
                     </label>
                     <select
                       className="form-control"
                       value={roomQty}
                       onChange={(e) => setRoomQty(parseInt(e.target.value, 10))}
                     >
-                      <option value="1">1 Room (Max 4 Guests)</option>
-                      <option value="2">2 Rooms (Max 8 Guests)</option>
-                      <option value="3">3 Rooms (Max 12 Guests)</option>
+                      {Array.from({ length: selectedRoom?.ac_status === 'AC' ? 3 : 2 }, (_, i) => i + 1).map((qty) => (
+                        <option key={qty} value={qty}>
+                          {qty} Room{qty > 1 ? 's' : ''} (Max {4 * qty} Guests)
+                        </option>
+                      ))}
                     </select>
                   </div>
 
@@ -382,45 +426,85 @@ export const Booking = () => {
                     </select>
                   </div>
 
-                  {/* Children 0-4 Years (Free) */}
+                  {/* Children Total Counter */}
                   <div className="form-group">
                     <label className="form-label" style={{ justifyContent: 'space-between' }}>
-                      <span><Users size={15} color="var(--success)" /> Children (0–4 yrs)</span>
-                      <span style={{ fontSize: '0.72rem', color: 'var(--success)', fontWeight: 700 }}>FREE</span>
+                      <span><Users size={15} color="var(--gold)" /> Children</span>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                        ≤{pricingConfig.child_age_free_limit ?? 4}y: Free • &gt;{pricingConfig.child_age_free_limit ?? 4}y: +₹${pricingConfig.extra_person_rate}/nt
+                      </span>
                     </label>
                     <select
                       className="form-control"
-                      value={childrenUnder4}
-                      onChange={(e) => setChildrenUnder4(parseInt(e.target.value, 10))}
+                      value={childrenCount}
+                      onChange={(e) => handleChildrenCountChange(e.target.value)}
                     >
                       {Array.from({ length: (4 * roomQty) + 1 }, (_, i) => i).map((num) => (
                         <option key={num} value={num}>
-                          {num} Child{num === 1 ? '' : 'ren'} (0–4 yrs: Free)
+                          {num} Child{num === 1 ? '' : 'ren'}
                         </option>
                       ))}
                     </select>
                   </div>
 
-                  {/* Children Above 4 Years (Chargeable if total chargeable > 2 per room) */}
-                  <div className="form-group">
-                    <label className="form-label" style={{ justifyContent: 'space-between' }}>
-                      <span><Users size={15} color="var(--gold)" /> Children (Above 4 yrs)</span>
-                      <span style={{ fontSize: '0.72rem', color: 'var(--primary)', fontWeight: 600 }}>
-                        ₹{pricingConfig.extra_person_rate}/nt extra
+                  {/* Dynamic Age Selectors for each Child */}
+                  {childrenCount > 0 && (
+                    <div style={{ gridColumn: '1 / -1', padding: '1.1rem', borderRadius: 'var(--radius-md)', backgroundColor: '#FDFBF7', border: '1px solid var(--border-gold)', marginTop: '0.25rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                        <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <Users size={16} color="var(--primary)" /> Individual Child Age Classification
+                        </div>
+                        <div style={{ fontSize: '0.78rem' }}>
+                          <span className="badge badge-success" style={{ marginRight: '6px' }}>{childrenUnder4} Free (≤{pricingConfig.child_age_free_limit ?? 4} yrs)</span>
+                          {childrenAbove4 > 0 && (
+                            <span className="badge badge-gold">{childrenAbove4} Extra Guest (&gt;{pricingConfig.child_age_free_limit ?? 4} yrs)</span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: '0.75rem' }}>
+                        {childrenAges.map((age, idx) => {
+                          const isFree = Number(age) <= (pricingConfig.child_age_free_limit ?? 4);
+                          return (
+                            <div key={idx} className="form-group" style={{ margin: 0, padding: '0.75rem', backgroundColor: '#FFFFFF', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-light)' }}>
+                              <label className="form-label" style={{ fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+                                <span>Child {idx + 1} Age:</span>
+                                <span className={`badge ${isFree ? 'badge-success' : 'badge-gold'}`} style={{ fontSize: '0.72rem', padding: '2px 6px' }}>
+                                  {isFree ? 'FREE' : `+₹${pricingConfig.extra_person_rate}/nt`}
+                                </span>
+                              </label>
+                              <select
+                                className="form-control"
+                                value={age}
+                                onChange={(e) => handleChildAgeChange(idx, e.target.value)}
+                                style={{ fontSize: '0.85rem', padding: '0.4rem 0.6rem' }}
+                              >
+                                {Array.from({ length: 18 }, (_, a) => (
+                                  <option key={a} value={a}>
+                                    {a === 0 ? 'Under 1 yr (Infant)' : `${a} year${a > 1 ? 's' : ''} ${a <= (pricingConfig.child_age_free_limit ?? 4) ? '(Free)' : `(+₹${pricingConfig.extra_person_rate}/nt)`}`}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Over-capacity warning for Inventory Limits */}
+                  {(!availability.available || roomQty > availability.remainingQty) && (
+                    <div style={{ gridColumn: '1 / -1', padding: '0.75rem 1rem', borderRadius: 'var(--radius-sm)', backgroundColor: '#FEF2F2', border: '1px solid #FCA5A5', color: '#B91C1C', fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <AlertCircle size={16} />
+                      <span>
+                        {selectedRoom?.ac_status === 'AC' && roomQty > 3
+                          ? 'Only 3 AC rooms available for these dates.'
+                          : selectedRoom?.ac_status === 'Non-AC' && roomQty > 2
+                          ? 'Only 2 Non-AC rooms available for these dates.'
+                          : `Only ${availability.remainingQty} ${selectedRoom?.ac_status || ''} room(s) available for these dates.`}
                       </span>
-                    </label>
-                    <select
-                      className="form-control"
-                      value={childrenAbove4}
-                      onChange={(e) => setChildrenAbove4(parseInt(e.target.value, 10))}
-                    >
-                      {Array.from({ length: (4 * roomQty) + 1 }, (_, i) => i).map((num) => (
-                        <option key={num} value={num}>
-                          {num} Child{num === 1 ? '' : 'ren'} (Above 4 yrs)
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Occupancy Policy & Total Persons Notice */}

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { Link, useLocation, useParams } from 'react-router-dom';
 import { StorageService } from '../services/storageService';
 import { PricingService } from '../services/pricingService';
 import { useAuth } from '../context/AuthContext';
@@ -32,16 +33,29 @@ import {
   Info
 } from 'lucide-react';
 
-export const Admin = () => {
-  const { isAdminLoggedIn, loginAdmin, logoutAdmin } = useAuth();
+export const Admin = ({ initialTab }) => {
+  const { customer, isAdminLoggedIn, loginAdmin, logoutAdmin, logoutCustomer } = useAuth();
   const { showSuccess, showError, showInfo } = useToast();
+  const location = useLocation();
+  const params = useParams();
 
   // Admin login form state
   const [adminUser, setAdminUser] = useState('');
   const [adminPass, setAdminPass] = useState('');
 
   // Active Tab: 'dashboard' | 'bookings' | 'rooms' | 'pricing' | 'reviews' | 'customers'
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const isPricingPath = location.pathname.includes('/pricing') || initialTab === 'pricing';
+  const defaultTab = isPricingPath ? 'pricing' : (params.tab || initialTab || 'dashboard');
+  const [activeTab, setActiveTab] = useState(defaultTab);
+
+  // Sync tab if URL changes
+  useEffect(() => {
+    if (location.pathname.includes('/pricing')) {
+      setActiveTab('pricing');
+    } else if (params.tab) {
+      setActiveTab(params.tab);
+    }
+  }, [location.pathname, params.tab]);
 
   // Data State
   const [stats, setStats] = useState(null);
@@ -87,6 +101,27 @@ export const Admin = () => {
 
   const handleSavePricing = async (e) => {
     e.preventDefault();
+
+    const acRate = Number(pricingForm.base_rates?.AC);
+    const nonAcRate = Number(pricingForm.base_rates?.["Non-AC"]);
+    const extraRate = Number(pricingForm.extra_person_rate);
+    const childLimit = Number(pricingForm.child_age_free_limit);
+    const acQty = Number(pricingForm.inventory?.AC?.total_rooms);
+    const nonAcQty = Number(pricingForm.inventory?.["Non-AC"]?.total_rooms);
+
+    if (isNaN(acRate) || acRate < 0 || isNaN(nonAcRate) || nonAcRate < 0 || isNaN(extraRate) || extraRate < 0) {
+      showError("Price must be greater than or equal to 0");
+      return;
+    }
+    if (isNaN(childLimit) || childLimit < 0) {
+      showError("Child age free limit must be greater than or equal to 0");
+      return;
+    }
+    if (isNaN(acQty) || acQty < 0 || isNaN(nonAcQty) || nonAcQty < 0) {
+      showError("Room inventory count must be greater than or equal to 0");
+      return;
+    }
+
     setIsSavingPricing(true);
     try {
       await PricingService.savePricingConfig(pricingForm, 'Admin');
@@ -228,7 +263,44 @@ export const Admin = () => {
     });
   }, [bookings, bookingStatusFilter, bookingSearch]);
 
-  // LOGIN SCREEN
+  // AUTH GUARD: 403 Forbidden for logged-in standard customer (role: 'user')
+  if (customer && !isAdminLoggedIn) {
+    return (
+      <div className="syn-main-content" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '80vh', padding: '2rem 1rem' }}>
+        <div style={{ backgroundColor: '#FFFFFF', borderRadius: 'var(--radius-xl)', padding: '2.5rem', border: '1px solid #FECACA', boxShadow: 'var(--shadow-xl)', width: '100%', maxWidth: '480px', textAlign: 'center' }}>
+          <div style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundColor: '#FEE2E2', color: '#DC2626', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.25rem' }}>
+            <ShieldAlert size={36} />
+          </div>
+          <div>
+            <span className="badge badge-danger" style={{ marginBottom: '0.75rem', backgroundColor: '#FEE2E2', color: '#DC2626', border: '1px solid #FECACA' }}>
+              403 Forbidden • Access Denied
+            </span>
+          </div>
+          <h1 style={{ fontSize: '1.6rem', color: 'var(--text-main)', marginBottom: '0.5rem' }}>
+            Admin Privileges Required
+          </h1>
+          <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '1.5rem' }}>
+            You are currently authenticated as <strong>{customer.name}</strong> (standard customer: <code>role: 'user'</code>). Administrative access to pricing and property inventory is strictly restricted.
+          </p>
+          <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <Link to="/" className="btn btn-outline">
+              Return to Home
+            </Link>
+            <button
+              onClick={() => {
+                logoutCustomer();
+              }}
+              className="btn btn-primary"
+            >
+              Sign Out &amp; Staff Login
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // LOGIN SCREEN FOR GUESTS
   if (!isAdminLoggedIn) {
     return (
       <div className="syn-main-content" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '80vh', padding: '2rem 1rem' }}>

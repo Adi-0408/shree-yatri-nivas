@@ -36,7 +36,10 @@ function pricingApiPlugin() {
 
         // Helper to send JSON response
         const sendJson = (status, data) => {
-          res.setHeader('Content-Type', 'application/json');
+          res.setHeader('Content-Type', 'application/json; charset=utf-8');
+          res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+          res.setHeader('Pragma', 'no-cache');
+          res.setHeader('Expires', '0');
           res.statusCode = status;
           res.end(JSON.stringify(data));
         };
@@ -71,16 +74,16 @@ function pricingApiPlugin() {
             const adminUser = body.adminUser || body.modified_by || 'Admin';
 
             if (isNaN(acRate) || acRate < 0 || isNaN(nonAcRate) || nonAcRate < 0) {
-              return sendJson(400, { success: false, error: 'Room base rates must be positive numbers.' });
+              return sendJson(400, { success: false, error: 'Price must be greater than or equal to 0.' });
             }
             if (isNaN(extraRate) || extraRate < 0) {
-              return sendJson(400, { success: false, error: 'Extra person rate must be a positive number.' });
+              return sendJson(400, { success: false, error: 'Price must be greater than or equal to 0.' });
             }
             if (isNaN(childLimit) || childLimit < 0) {
-              return sendJson(400, { success: false, error: 'Child age free limit must be positive number.' });
+              return sendJson(400, { success: false, error: 'Child age free limit must be greater than or equal to 0.' });
             }
             if (isNaN(acQty) || acQty < 0 || isNaN(nonAcQty) || nonAcQty < 0) {
-              return sendJson(400, { success: false, error: 'Inventory counts cannot be negative.' });
+              return sendJson(400, { success: false, error: 'Room inventory count must be greater than or equal to 0.' });
             }
 
             const changeDescriptions = [];
@@ -135,13 +138,21 @@ function pricingApiPlugin() {
               roomQty = 1,
               adults = 2,
               childrenUnder4 = 0,
-              childrenAbove4 = 0
+              childrenAbove4 = 0,
+              childrenAges
             } = body;
 
             const parsedQty = Math.max(1, parseInt(roomQty, 10) || 1);
             const parsedAdults = Math.max(1, parseInt(adults, 10) || 1);
-            const parsedKidsUnder4 = Math.max(0, parseInt(childrenUnder4, 10) || 0);
-            const parsedKidsAbove4 = Math.max(0, parseInt(childrenAbove4, 10) || 0);
+            const childLimit = typeof serverPricingState.child_age_free_limit === 'number' ? serverPricingState.child_age_free_limit : 4;
+
+            let parsedKidsUnder4 = Math.max(0, parseInt(childrenUnder4, 10) || 0);
+            let parsedKidsAbove4 = Math.max(0, parseInt(childrenAbove4, 10) || 0);
+
+            if (Array.isArray(childrenAges)) {
+              parsedKidsUnder4 = childrenAges.filter(a => Number(a) <= childLimit).length;
+              parsedKidsAbove4 = childrenAges.filter(a => Number(a) > childLimit).length;
+            }
 
             let nights = 1;
             if (checkIn && checkOut) {
@@ -150,7 +161,7 @@ function pricingApiPlugin() {
               nights = calcDays > 0 ? calcDays : 1;
             }
 
-            const baseRate = serverPricingState.base_rates[acStatus] || (acStatus === 'Non-AC' ? 1400 : 2400);
+            const baseRate = Math.round(serverPricingState.base_rates[acStatus] || (acStatus === 'Non-AC' ? 1400 : 2400));
             const baseCapacityPerRoom = serverPricingState.base_capacity_per_room || 2;
             const maxCapacityPerRoom = serverPricingState.max_capacity_per_room || 4;
             const maxAllowedGuests = maxCapacityPerRoom * parsedQty;
@@ -162,9 +173,10 @@ function pricingApiPlugin() {
             const includedGuests = baseCapacityPerRoom * parsedQty;
             const extraGuests = Math.max(0, chargeableGuests - includedGuests);
 
-            const roomBaseCharge = baseRate * parsedQty * nights;
-            const extraGuestCharge = extraGuests * serverPricingState.extra_person_rate * nights;
-            const totalAmount = roomBaseCharge + extraGuestCharge;
+            const extraPersonRate = Math.round(serverPricingState.extra_person_rate ?? 700);
+            const roomBaseCharge = Math.round(baseRate * parsedQty * nights);
+            const extraGuestCharge = Math.round(extraGuests * extraPersonRate * nights);
+            const totalAmount = Math.round(roomBaseCharge + extraGuestCharge);
 
             return sendJson(200, {
               success: true,
@@ -176,16 +188,17 @@ function pricingApiPlugin() {
                 adults: parsedAdults,
                 childrenUnder4: parsedKidsUnder4,
                 childrenAbove4: parsedKidsAbove4,
+                childrenAges: Array.isArray(childrenAges) ? childrenAges : [],
                 totalGuests,
                 includedGuests,
                 chargeableGuests,
                 extraGuests,
-                extraPersonRate: serverPricingState.extra_person_rate,
+                extraPersonRate,
                 extraGuestCharge,
                 totalAmount,
                 maxAllowedGuests,
                 exceedsMaxCapacity,
-                childAgeLimit: serverPricingState.child_age_free_limit,
+                childAgeLimit: childLimit,
                 acStatus
               }
             });

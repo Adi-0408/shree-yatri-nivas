@@ -4,7 +4,7 @@ export const PricingService = {
   // GET /api/admin/pricing
   async fetchPricingConfig() {
     try {
-      const res = await fetch('/api/admin/pricing');
+      const res = await fetch('/api/admin/pricing', { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
         if (data.pricing) return data.pricing;
@@ -20,20 +20,22 @@ export const PricingService = {
     try {
       const res = await fetch('/api/admin/pricing', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' },
         body: JSON.stringify({ ...newConfig, adminUser })
       });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.success && data.pricing) {
-          StorageService.updatePricingConfig(data.pricing, adminUser);
-          return data;
-        }
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to save pricing configuration');
       }
-    } catch {
+      StorageService.updatePricingConfig(data.pricing, adminUser);
+      return data;
+    } catch (err) {
+      if (err.message && err.message.includes('Price must be')) {
+        throw err;
+      }
       // fallback to client-side localStorage
+      return StorageService.updatePricingConfig(newConfig, adminUser);
     }
-    return StorageService.updatePricingConfig(newConfig, adminUser);
   },
 
   // POST /api/bookings/calculate

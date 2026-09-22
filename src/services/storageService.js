@@ -112,11 +112,15 @@ export const StorageService = {
       }
     });
 
-    const remaining = Math.max(0, (room.total_quantity || 1) - bookedRoomsCount);
+    const config = this.getPricingConfig();
+    const configQty = config.inventory?.[room.ac_status]?.total_rooms;
+    const totalQty = typeof configQty === "number" ? configQty : (room.total_quantity || 1);
+    const remaining = Math.max(0, totalQty - bookedRoomsCount);
+
     return {
       available: remaining >= requestedQty,
       remainingQty: remaining,
-      totalQty: room.total_quantity,
+      totalQty,
       bookedQty: bookedRoomsCount
     };
   },
@@ -274,7 +278,9 @@ export const StorageService = {
   getCurrentCustomer() {
     try {
       const data = localStorage.getItem(STORAGE_KEYS.CURRENT_CUSTOMER);
-      return data ? JSON.parse(data) : null;
+      if (!data) return null;
+      const parsed = JSON.parse(data);
+      return { ...parsed, role: parsed.role || "user" };
     } catch {
       return null;
     }
@@ -306,7 +312,8 @@ export const StorageService = {
         name: customer.name,
         email: customer.email,
         mobile: customer.mobile,
-        city: customer.city || "Guest"
+        city: customer.city || "Guest",
+        role: customer.role || "user"
       };
       localStorage.setItem(STORAGE_KEYS.CURRENT_CUSTOMER, JSON.stringify(sessionData));
       return { success: true, customer: sessionData };
@@ -343,6 +350,7 @@ export const StorageService = {
       mobile: data.mobile.trim(),
       password: data.password.trim(),
       city: data.city ? data.city.trim() : "Pandharpur Devotee",
+      role: "user",
       created_at: new Date().toISOString()
     };
 
@@ -354,7 +362,8 @@ export const StorageService = {
       name: newCustomer.name,
       email: newCustomer.email,
       mobile: newCustomer.mobile,
-      city: newCustomer.city
+      city: newCustomer.city,
+      role: "user"
     };
     localStorage.setItem(STORAGE_KEYS.CURRENT_CUSTOMER, JSON.stringify(sessionData));
     return { success: true, customer: sessionData };
@@ -425,22 +434,19 @@ export const StorageService = {
     const nonAcQty = Number(newConfig.inventory?.["Non-AC"]?.total_rooms);
 
     if (isNaN(acRate) || acRate < 0) {
-      throw new Error("AC room base rate must be a valid positive number.");
+      throw new Error("Price must be greater than or equal to 0.");
     }
     if (isNaN(nonAcRate) || nonAcRate < 0) {
-      throw new Error("Non-AC room base rate must be a valid positive number.");
+      throw new Error("Price must be greater than or equal to 0.");
     }
     if (isNaN(extraRate) || extraRate < 0) {
-      throw new Error("Extra person rate must be a valid positive number.");
+      throw new Error("Price must be greater than or equal to 0.");
     }
     if (isNaN(childAgeLimit) || childAgeLimit < 0) {
-      throw new Error("Child free age limit must be a valid positive number.");
+      throw new Error("Child age free limit must be greater than or equal to 0.");
     }
-    if (isNaN(acQty) || acQty < 0) {
-      throw new Error("AC room inventory count must be 0 or greater.");
-    }
-    if (isNaN(nonAcQty) || nonAcQty < 0) {
-      throw new Error("Non-AC room inventory count must be 0 or greater.");
+    if (isNaN(acQty) || acQty < 0 || isNaN(nonAcQty) || nonAcQty < 0) {
+      throw new Error("Room inventory count must be greater than or equal to 0.");
     }
 
     const current = this.getPricingConfig();
@@ -525,13 +531,22 @@ export const StorageService = {
       roomQty = 1,
       adults = 2,
       childrenUnder4 = 0,
-      childrenAbove4 = 0
+      childrenAbove4 = 0,
+      childrenAges
     } = params;
 
     const parsedQty = Math.max(1, parseInt(roomQty, 10) || 1);
     const parsedAdults = Math.max(1, parseInt(adults, 10) || 1);
-    const parsedKidsUnder4 = Math.max(0, parseInt(childrenUnder4, 10) || 0);
-    const parsedKidsAbove4 = Math.max(0, parseInt(childrenAbove4, 10) || 0);
+    const childAgeLimit = typeof config.child_age_free_limit === "number" ? config.child_age_free_limit : 4;
+
+    let parsedKidsUnder4 = Math.max(0, parseInt(childrenUnder4, 10) || 0);
+    let parsedKidsAbove4 = Math.max(0, parseInt(childrenAbove4, 10) || 0);
+
+    // If dynamic childrenAges array is supplied, map strictly against childAgeLimit
+    if (Array.isArray(childrenAges)) {
+      parsedKidsUnder4 = childrenAges.filter(a => Number(a) <= childAgeLimit).length;
+      parsedKidsAbove4 = childrenAges.filter(a => Number(a) > childAgeLimit).length;
+    }
 
     // Nights calculation
     let nights = 1;
@@ -547,7 +562,7 @@ export const StorageService = {
       room = this.getRoomById(roomId);
     }
     const resolvedAcStatus = room ? room.ac_status : (acStatus || "AC");
-    const baseRate = room?.price ?? (config.base_rates?.[resolvedAcStatus] || 2400);
+    const baseRate = Math.round(room?.price ?? (config.base_rates?.[resolvedAcStatus] || (resolvedAcStatus === "Non-AC" ? 1400 : 2400)));
 
     // Occupancy rules
     const baseCapacityPerRoom = config.base_capacity_per_room || 2;
@@ -562,10 +577,11 @@ export const StorageService = {
     const includedGuests = baseCapacityPerRoom * parsedQty;
     const extraGuests = Math.max(0, chargeableGuests - includedGuests);
 
-    // Cost line items
-    const roomBaseCharge = baseRate * parsedQty * nights;
-    const extraGuestCharge = extraGuests * (config.extra_person_rate || 700) * nights;
-    const totalAmount = roomBaseCharge + extraGuestCharge;
+    // Cost line items (clean integer math to prevent floating-point defects)
+    const extraPersonRate = Math.round(config.extra_person_rate ?? 700);
+    const roomBaseCharge = Math.round(baseRate * parsedQty * nights);
+    const extraGuestCharge = Math.round(extraGuests * extraPersonRate * nights);
+    const totalAmount = Math.round(roomBaseCharge + extraGuestCharge);
 
     return {
       numberOfNights: nights,
@@ -575,6 +591,7 @@ export const StorageService = {
       adults: parsedAdults,
       childrenUnder4: parsedKidsUnder4,
       childrenAbove4: parsedKidsAbove4,
+      childrenAges: Array.isArray(childrenAges) ? childrenAges : [],
       totalGuests,
       includedGuests,
       chargeableGuests,

@@ -189,6 +189,7 @@ export const DEFAULT_CUSTOMERS = [
     email: "ramesh@example.com",
     password: "password123",
     city: "Pune",
+    role: "user",
     created_at: "2026-09-20T10:00:00Z"
   }
 ];
