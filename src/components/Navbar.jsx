@@ -131,7 +131,7 @@ export const Navbar = () => {
             </button>
           )}
 
-          <Link to="/booking" className="btn btn-primary btn-sm" style={{ display: 'none', md: 'inline-flex' }}>
+          <Link to="/booking" className="btn btn-primary btn-sm syn-reserve-cta">
             <Sparkles size={16} />
             <span>Instant Reserve</span>
           </Link>

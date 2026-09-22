@@ -511,7 +511,7 @@ export const Admin = ({ initialTab }) => {
                       <th>Guest Name</th>
                       <th>Room</th>
                       <th>Dates</th>
-                      <th>Amount</th>
+                      <th style={{ textAlign: 'right' }}>Amount</th>
                       <th>Status</th>
                     </tr>
                   </thead>
@@ -525,7 +525,7 @@ export const Admin = ({ initialTab }) => {
                         </td>
                         <td>{b.room_name}</td>
                         <td>{b.check_in} to {b.check_out}</td>
-                        <td>₹{b.total_amount?.toLocaleString('en-IN')}</td>
+                        <td className="td-number">₹{b.total_amount?.toLocaleString('en-IN')}</td>
                         <td>
                           <span className={`badge ${b.booking_status === 'Confirmed' ? 'badge-success' : b.booking_status === 'Checked-in' ? 'badge-info' : 'badge-warning'}`}>
                             {b.booking_status}
@@ -998,25 +998,30 @@ export const Admin = ({ initialTab }) => {
                           })}
                         />
                       </div>
-                      <div className="form-group">
-                        <label className="form-label">AC Status</label>
-                        <select
-                          className="form-control"
-                          value={pricingForm.inventory?.AC?.active !== false ? 'active' : 'inactive'}
-                          onChange={(e) => setPricingForm({
-                            ...pricingForm,
-                            inventory: {
-                              ...pricingForm.inventory,
-                              AC: {
-                                ...pricingForm.inventory?.AC,
-                                active: e.target.value === 'active'
-                              }
-                            }
-                          })}
-                        >
-                          <option value="active">Active (Live)</option>
-                          <option value="inactive">Inactive (Off)</option>
-                        </select>
+                      <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <label className="form-label" style={{ marginBottom: 0 }}>AC Category Status</label>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', height: '44px' }}>
+                          <label className="syn-switch">
+                            <input
+                              type="checkbox"
+                              checked={pricingForm.inventory?.AC?.active !== false}
+                              onChange={(e) => setPricingForm({
+                                ...pricingForm,
+                                inventory: {
+                                  ...pricingForm.inventory,
+                                  AC: {
+                                    ...pricingForm.inventory?.AC,
+                                    active: e.target.checked
+                                  }
+                                }
+                              })}
+                            />
+                            <span className="syn-switch-slider"></span>
+                          </label>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: pricingForm.inventory?.AC?.active !== false ? 'var(--success)' : 'var(--text-muted)' }}>
+                            {pricingForm.inventory?.AC?.active !== false ? 'Active' : 'Inactive'}
+                          </span>
+                        </div>
                       </div>
                     </div>
 
@@ -1043,25 +1048,30 @@ export const Admin = ({ initialTab }) => {
                           })}
                         />
                       </div>
-                      <div className="form-group">
-                        <label className="form-label">Non-AC Status</label>
-                        <select
-                          className="form-control"
-                          value={pricingForm.inventory?.["Non-AC"]?.active !== false ? 'active' : 'inactive'}
-                          onChange={(e) => setPricingForm({
-                            ...pricingForm,
-                            inventory: {
-                              ...pricingForm.inventory,
-                              "Non-AC": {
-                                ...pricingForm.inventory?.["Non-AC"],
-                                active: e.target.value === 'active'
-                              }
-                            }
-                          })}
-                        >
-                          <option value="active">Active (Live)</option>
-                          <option value="inactive">Inactive (Off)</option>
-                        </select>
+                      <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <label className="form-label" style={{ marginBottom: 0 }}>Non-AC Category Status</label>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', height: '44px' }}>
+                          <label className="syn-switch">
+                            <input
+                              type="checkbox"
+                              checked={pricingForm.inventory?.["Non-AC"]?.active !== false}
+                              onChange={(e) => setPricingForm({
+                                ...pricingForm,
+                                inventory: {
+                                  ...pricingForm.inventory,
+                                  "Non-AC": {
+                                    ...pricingForm.inventory?.["Non-AC"],
+                                    active: e.target.checked
+                                  }
+                                }
+                              })}
+                            />
+                            <span className="syn-switch-slider"></span>
+                          </label>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: pricingForm.inventory?.["Non-AC"]?.active !== false ? 'var(--success)' : 'var(--text-muted)' }}>
+                            {pricingForm.inventory?.["Non-AC"]?.active !== false ? 'Active' : 'Inactive'}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>

@@ -43,13 +43,18 @@ export const RoomDetailsModal = ({ room, onClose }) => {
         {/* Header */}
         <div className="modal-header">
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-              <span className="badge badge-gold">{room.room_type}</span>
-              <span className="badge badge-primary">{room.ac_status}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem', flexWrap: 'wrap' }}>
+              <span className="badge-pill-surface">{room.room_type}</span>
+              <span className="badge-pill-accent">{room.ac_status}</span>
+              {room.total_rooms && (
+                <span className="badge-pill-muted">
+                  {room.total_rooms} {room.ac_status} Rooms
+                </span>
+              )}
             </div>
-            <h2 style={{ fontSize: '1.4rem', color: 'var(--text-main)' }}>{room.room_name}</h2>
+            <h2 style={{ fontSize: '1.45rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.01em' }}>{room.room_name}</h2>
           </div>
-          <button onClick={onClose} style={{ padding: '0.4rem', color: 'var(--text-muted)' }}>
+          <button onClick={onClose} style={{ padding: '0.4rem', color: 'var(--text-muted)', borderRadius: 'var(--radius-md)', transition: 'var(--transition-fast)' }} aria-label="Close modal">
             <X size={22} />
           </button>
         </div>
@@ -104,28 +109,28 @@ export const RoomDetailsModal = ({ room, onClose }) => {
           </div>
 
           {/* Quick Specifications */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.85rem', marginBottom: '1.5rem', backgroundColor: 'var(--bg-subtle)', padding: '1rem', borderRadius: 'var(--radius-md)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.85rem', marginBottom: '1.5rem', backgroundColor: 'var(--bg-canvas)', padding: '1rem 1.25rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)' }}>
             <div>
-              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600 }}>BASE CAPACITY</div>
-              <div style={{ fontWeight: 700, fontSize: '0.92rem', display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--text-main)' }}>
+              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Base Capacity</div>
+              <div style={{ fontWeight: 700, fontSize: '0.92rem', display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--text-main)', marginTop: '2px' }}>
                 <Users size={15} color="var(--primary)" /> 2 Included
               </div>
             </div>
             <div>
-              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600 }}>MAX CAPACITY</div>
-              <div style={{ fontWeight: 700, fontSize: '0.92rem', display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--gold)' }}>
+              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Max Capacity</div>
+              <div style={{ fontWeight: 700, fontSize: '0.92rem', display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--gold)', marginTop: '2px' }}>
                 <Users size={15} color="var(--gold)" /> 4 Persons
               </div>
             </div>
             <div>
-              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600 }}>STANDARD TARIFF</div>
-              <div style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--primary)' }}>
-                ₹{room.price.toLocaleString('en-IN')}
+              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Standard Tariff</div>
+              <div style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--primary)', marginTop: '2px' }}>
+                ₹{room.price.toLocaleString('en-IN')}<span style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--text-muted)' }}> / night</span>
               </div>
             </div>
             <div>
-              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600 }}>EXTRA GUEST</div>
-              <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--text-main)' }}>
+              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Extra Guest</div>
+              <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--text-main)', marginTop: '2px' }}>
                 ₹700/night
               </div>
             </div>

@@ -84,13 +84,13 @@ export const Rooms = () => {
       {/* Header Banner */}
       <section style={{ backgroundColor: 'var(--bg-dark)', color: '#FFFFFF', padding: '3.5rem 0', position: 'relative' }}>
         <div className="syn-container" style={{ textAlign: 'center' }}>
-          <span className="badge badge-gold" style={{ marginBottom: '0.75rem' }}>
+          <span className="badge-pill-surface" style={{ marginBottom: '1rem', display: 'inline-flex', color: 'var(--gold)', borderColor: 'rgba(217, 119, 6, 0.4)', background: 'rgba(217, 119, 6, 0.12)', fontWeight: 700 }}>
             Accommodations & Tariffs
           </span>
-          <h1 style={{ fontSize: '2.5rem', color: '#FFFFFF', marginBottom: '0.75rem' }}>
+          <h1 style={{ fontSize: '2.5rem', color: '#FFFFFF', marginBottom: '0.75rem', fontWeight: 800, letterSpacing: '-0.02em' }}>
             Comfortable Pilgrim Rooms & Suites
           </h1>
-          <p style={{ color: '#D6CEC5', maxWidth: '640px', margin: '0 auto', fontSize: '1.05rem' }}>
+          <p style={{ color: '#D6CEC5', maxWidth: '640px', margin: '0 auto', fontSize: '1.05rem', lineHeight: 1.6 }}>
             Choose from our curated collection of clean, peaceful AC and Non-AC accommodations suited for solo pilgrims, couples, and large devotee families.
           </p>
         </div>
@@ -171,7 +171,7 @@ export const Rooms = () => {
               <button
                 onClick={handleResetFilters}
                 className="btn btn-secondary"
-                style={{ height: '42px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                style={{ height: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                 title="Reset all filters"
               >
                 <RotateCcw size={15} /> Reset
