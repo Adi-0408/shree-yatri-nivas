@@ -1,0 +1,12 @@
+{
+  "name": "shree-yatri-nivas",
+  "version": "1.0.0",
+  "description": "SHREE YATRI NIVAS - Modern Responsive Lodging Booking and Management Website",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": ["lodging", "booking", "hotel", "yatri-nivas", "hospitality"],
+  "author": "ITPL",
+  "license": "ISC"
+}
