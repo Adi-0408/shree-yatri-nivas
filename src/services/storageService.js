@@ -151,6 +151,12 @@ export const StorageService = {
   },
 
   createBooking(bookingData) {
+    const currentCustomer = this.getCurrentCustomer();
+    const isAdmin = this.isAdminLoggedIn();
+    if (!currentCustomer && !isAdmin && !bookingData.is_admin_booking) {
+      throw new Error("Devotee account required. Please sign in or register to complete your reservation.");
+    }
+
     const check = this.checkRoomAvailability(
       bookingData.room_id,
       bookingData.check_in,
@@ -165,6 +171,8 @@ export const StorageService = {
     const ref = this.generateBookingReference();
     const newBooking = {
       ...bookingData,
+      customer_id: bookingData.customer_id || currentCustomer?.id || currentCustomer?.mobile || currentCustomer?.email || 'DEVOTEE',
+      customer_name: bookingData.customer_name || currentCustomer?.name || bookingData.guest_name,
       booking_id: ref,
       booking_reference: ref,
       payment_method: bookingData.payment_method || "Pay at Property",

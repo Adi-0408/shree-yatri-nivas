@@ -25,7 +25,8 @@ import {
   Mail,
   User,
   Search,
-  DollarSign
+  DollarSign,
+  Lock
 } from 'lucide-react';
 
 export const Booking = () => {
@@ -36,6 +37,7 @@ export const Booking = () => {
 
   const [step, setStep] = useState(1);
   const [rooms, setRooms] = useState([]);
+  const [pendingAdvanceStep, setPendingAdvanceStep] = useState(false);
   
   // Form State - Step 1
   const todayStr = new Date().toISOString().split('T')[0];
@@ -125,12 +127,30 @@ export const Booking = () => {
   // Autofill customer data if logged in
   useEffect(() => {
     if (customer) {
-      setGuestName((prev) => prev || customer.name || '');
-      setEmail((prev) => prev || customer.email || '');
-      setMobile((prev) => prev || customer.mobile || '');
-      setCity((prev) => prev || customer.city || '');
+      setGuestName(customer.name || '');
+      setEmail(customer.email || '');
+      setMobile(customer.mobile || '');
+      setCity(customer.city || '');
     }
   }, [customer]);
+
+  // If customer logs in after clicking "Sign In / Register to Book", auto-advance to Step 2
+  useEffect(() => {
+    if (isCustomerLoggedIn && pendingAdvanceStep) {
+      setPendingAdvanceStep(false);
+      setStep(2);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [isCustomerLoggedIn, pendingAdvanceStep]);
+
+  // Strictly prevent unauthenticated visitors from accessing Step 2
+  useEffect(() => {
+    if (step === 2 && !isCustomerLoggedIn) {
+      setStep(1);
+      showWarning('Devotee authentication required. Please sign in or register to complete your reservation.');
+      openAuthModal('login');
+    }
+  }, [step, isCustomerLoggedIn, showWarning, openAuthModal]);
 
   // Selected room object
   const selectedRoom = useMemo(() => {
@@ -185,6 +205,15 @@ export const Booking = () => {
       showError(msg);
       return;
     }
+
+    // Devotee Authentication Enforcement: Account required to proceed
+    if (!isCustomerLoggedIn) {
+      setPendingAdvanceStep(true);
+      showWarning('Devotee account required. Please sign in or register to complete your reservation.');
+      openAuthModal('login');
+      return;
+    }
+
     setStep(2);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -192,6 +221,11 @@ export const Booking = () => {
   // Step 2 -> Step 3 (Create Booking)
   const handleFinalSubmit = (e) => {
     e.preventDefault();
+    if (!isCustomerLoggedIn) {
+      showError('Devotee account required. Please sign in or register to complete your reservation.');
+      openAuthModal('login');
+      return;
+    }
     if (!guestName.trim() || !mobile.trim()) {
       showError('Please enter full guest name and a valid mobile number.');
       return;
@@ -203,6 +237,8 @@ export const Booking = () => {
 
     try {
       const bookingPayload = {
+        customer_id: customer?.id || customer?.mobile || customer?.email || 'DEVOTEE',
+        customer_name: customer?.name || guestName.trim(),
         guest_name: guestName.trim(),
         mobile: mobile.trim(),
         email: email.trim() || `${mobile.trim()}@guest.shreeyatrinivas.com`,
@@ -616,14 +652,81 @@ export const Booking = () => {
                   </div>
                 )}
 
+                {/* Devotee Account Requirement Notice */}
+                {!isCustomerLoggedIn && (
+                  <div style={{
+                    backgroundColor: '#FFFDF5',
+                    border: '1.5px solid var(--gold)',
+                    borderRadius: 'var(--radius-md)',
+                    padding: '1.1rem 1.25rem',
+                    marginBottom: '1.5rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    gap: '1rem',
+                    boxShadow: 'var(--shadow-sm)'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                      <div style={{
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '50%',
+                        backgroundColor: 'var(--primary-light)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'var(--primary)',
+                        flexShrink: 0
+                      }}>
+                        <Lock size={20} />
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-main)' }}>
+                          Devotee Account Required to Book
+                        </div>
+                        <div style={{ fontSize: '0.83rem', color: 'var(--text-secondary)' }}>
+                          Please sign in or create an account to confirm your room reservation.
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.6rem' }}>
+                      <button
+                        type="button"
+                        onClick={() => openAuthModal('login')}
+                        className="btn btn-primary btn-sm"
+                      >
+                        Devotee Sign In
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => openAuthModal('register')}
+                        className="btn btn-secondary btn-sm"
+                      >
+                        Create Account
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 <button
                   type="submit"
                   disabled={!availability.available}
                   className="btn btn-primary btn-lg"
                   style={{ width: '100%' }}
                 >
-                  <span>Proceed to Guest Details</span>
-                  <ArrowRight size={18} />
+                  {!isCustomerLoggedIn ? (
+                    <>
+                      <Lock size={18} />
+                      <span>Sign In / Register to Book</span>
+                      <ArrowRight size={18} />
+                    </>
+                  ) : (
+                    <>
+                      <span>Proceed to Guest Details</span>
+                      <ArrowRight size={18} />
+                    </>
+                  )}
                 </button>
               </form>
             </div>
@@ -632,18 +735,14 @@ export const Booking = () => {
           {/* STEP 2: Guest Details & Confirmation */}
           {step === 2 && (
             <div className="search-widget-card no-print">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '0.75rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '0.75rem', flexWrap: 'wrap', gap: '0.75rem' }}>
                 <h2 style={{ fontSize: '1.4rem', color: 'var(--text-main)' }}>
                   Guest & Devotee Information
                 </h2>
-                {!isCustomerLoggedIn && (
-                  <button
-                    type="button"
-                    onClick={() => openAuthModal('login')}
-                    className="btn btn-secondary btn-sm"
-                  >
-                    <User size={14} /> Sign In for 1-Click Fill
-                  </button>
+                {isCustomerLoggedIn && (
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: 'var(--success)', fontWeight: 600, backgroundColor: '#ECFDF5', padding: '0.35rem 0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid #A7F3D0' }}>
+                    <CheckCircle2 size={16} /> Authenticated Devotee: {customer?.name}
+                  </div>
                 )}
               </div>
 
