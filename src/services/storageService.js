@@ -137,8 +137,36 @@ export const StorageService = {
       onSnapshot(pricingRef, (docSnap) => {
         if (docSnap.exists()) {
           const cloudConfig = docSnap.data();
-          localStorage.setItem(STORAGE_KEYS.PRICING_CONFIG, JSON.stringify(cloudConfig));
-          window.dispatchEvent(new CustomEvent("syn_pricing_updated", { detail: cloudConfig }));
+          const localConfig = this.getPricingConfig();
+
+          // Intelligent merge: Ensure local date_range_rates are not erased if cloud had empty/missing array
+          const cloudRates = Array.isArray(cloudConfig.date_range_rates) ? cloudConfig.date_range_rates : [];
+          const localRates = Array.isArray(localConfig.date_range_rates) ? localConfig.date_range_rates : [];
+
+          let mergedRates = cloudRates;
+          if (cloudRates.length === 0 && localRates.length > 0) {
+            mergedRates = localRates;
+          } else if (localRates.length > 0 && cloudRates.length > 0) {
+            const rateMap = new Map();
+            localRates.forEach(r => { if (r && r.id) rateMap.set(r.id, r); });
+            cloudRates.forEach(r => { if (r && r.id) rateMap.set(r.id, r); });
+            mergedRates = Array.from(rateMap.values());
+            mergedRates.sort((a, b) => String(a.start_date).localeCompare(String(b.start_date)));
+          }
+
+          const finalConfig = {
+            ...localConfig,
+            ...cloudConfig,
+            date_range_rates: mergedRates
+          };
+
+          // If cloud was missing date_range_rates, repair cloud in background
+          if (cloudRates.length !== mergedRates.length) {
+            setDoc(pricingRef, cleanForFirestore(finalConfig), { merge: true }).catch(() => {});
+          }
+
+          localStorage.setItem(STORAGE_KEYS.PRICING_CONFIG, JSON.stringify(finalConfig));
+          window.dispatchEvent(new CustomEvent("syn_pricing_updated", { detail: finalConfig }));
         } else {
           // Auto-seed pricing config to Firestore if empty
           const localConfig = this.getPricingConfig();
@@ -473,12 +501,32 @@ export const StorageService = {
     }
 
     const ref = this.generateBookingReference();
+
+    // Enforce dynamic pricing calculation for the specific booking dates
+    const cost = this.calculateBookingCost({
+      roomId: bookingData.room_id,
+      acStatus: bookingData.ac_status || bookingData.room_type,
+      checkIn: bookingData.check_in,
+      checkOut: bookingData.check_out,
+      roomQty: bookingData.room_quantity || 1,
+      adults: bookingData.adults || 2,
+      childrenUnder4: bookingData.children_under_4 || 0,
+      childrenAbove4: bookingData.children_above_4 || 0,
+      childrenAges: bookingData.children_ages || []
+    });
+
     const newBooking = {
       ...bookingData,
       customer_id: bookingData.customer_id || currentCustomer?.id || currentCustomer?.mobile || currentCustomer?.email || 'DEVOTEE',
       customer_name: bookingData.customer_name || currentCustomer?.name || bookingData.guest_name,
       booking_id: ref,
       booking_reference: ref,
+      room_rate: cost.baseRate || bookingData.room_rate,
+      number_of_nights: cost.numberOfNights || bookingData.number_of_nights,
+      base_charges: cost.roomBaseCharge ?? bookingData.base_charges,
+      extra_charges: cost.extraGuestCharge ?? bookingData.extra_charges,
+      total_amount: cost.totalAmount ?? bookingData.total_amount,
+      extra_person_rate: cost.extraPersonRate ?? bookingData.extra_person_rate,
       payment_method: bookingData.payment_method || "Pay at Property",
       payment_status: bookingData.payment_status || "Pending",
       booking_status: "Confirmed",
@@ -1146,6 +1194,13 @@ export const StorageService = {
 
     localStorage.setItem(STORAGE_KEYS.PRICING_CONFIG, JSON.stringify(updatedConfig));
 
+    // Persist immediately to Cloud Firestore
+    if (db) {
+      setDoc(doc(db, "settings", "pricing_config"), cleanForFirestore(updatedConfig), { merge: true }).catch(err => {
+        console.warn("Firestore saveDateRangeRate error:", err.message);
+      });
+    }
+
     if (typeof fetch !== "undefined") {
       fetch('/api/admin/pricing', {
         method: 'PUT',
@@ -1184,6 +1239,13 @@ export const StorageService = {
     };
 
     localStorage.setItem(STORAGE_KEYS.PRICING_CONFIG, JSON.stringify(updatedConfig));
+
+    // Persist immediately to Cloud Firestore
+    if (db) {
+      setDoc(doc(db, "settings", "pricing_config"), cleanForFirestore(updatedConfig), { merge: true }).catch(err => {
+        console.warn("Firestore deleteDateRangeRate error:", err.message);
+      });
+    }
 
     if (typeof fetch !== "undefined") {
       fetch('/api/admin/pricing', {
@@ -1228,11 +1290,16 @@ export const StorageService = {
       parsedKidsAbove4 = childrenAges.filter(a => Number(a) > childAgeLimit).length;
     }
 
-    // Nights calculation
+    // Clean check-in & check-out dates (format: YYYY-MM-DD)
+    let cleanCheckIn = '';
+    let cleanCheckOut = '';
     let nights = 1;
+
     if (checkIn && checkOut) {
-      const diff = new Date(checkOut).getTime() - new Date(checkIn).getTime();
-      const calcDays = Math.ceil(diff / (1000 * 60 * 60 * 24));
+      cleanCheckIn = String(checkIn).split('T')[0].trim();
+      cleanCheckOut = String(checkOut).split('T')[0].trim();
+      const diff = new Date(cleanCheckOut).getTime() - new Date(cleanCheckIn).getTime();
+      const calcDays = Math.round(diff / (1000 * 60 * 60 * 24));
       nights = calcDays > 0 ? calcDays : 1;
     }
 
@@ -1265,16 +1332,23 @@ export const StorageService = {
     const nightBreakdowns = [];
     let hasSpecialDateRate = false;
 
-    if (checkIn && checkOut && nights > 0) {
-      const startMs = new Date(checkIn).getTime();
+    if (cleanCheckIn && cleanCheckOut && nights > 0) {
+      const parts = cleanCheckIn.split('-').map(Number);
+      const ciY = parts[0] || new Date().getFullYear();
+      const ciM = parts[1] || 1;
+      const ciD = parts[2] || 1;
+
       for (let i = 0; i < nights; i++) {
-        const nightDateObj = new Date(startMs + i * 24 * 60 * 60 * 1000);
+        // Use UTC date arithmetic to avoid any local timezone drift
+        const nightDateObj = new Date(Date.UTC(ciY, ciM - 1, ciD + i));
         const nightDateStr = nightDateObj.toISOString().split('T')[0];
 
         // Find active date-range override
         const matchedOverride = dateRangeRates.find(dr => {
-          if (!dr.start_date || !dr.end_date) return false;
-          return nightDateStr >= dr.start_date && nightDateStr <= dr.end_date;
+          if (!dr || !dr.start_date || !dr.end_date) return false;
+          const s = String(dr.start_date).split('T')[0].trim();
+          const e = String(dr.end_date).split('T')[0].trim();
+          return nightDateStr >= s && nightDateStr <= e;
         });
 
         let nightRate = standardBaseRate;
@@ -1283,7 +1357,12 @@ export const StorageService = {
         let overrideName = null;
 
         if (matchedOverride) {
-          const overrideRate = matchedOverride.rates?.[resolvedAcStatus] ??
+          const isAc = resolvedAcStatus === "AC" || (String(resolvedAcStatus).toUpperCase().includes("AC") && !String(resolvedAcStatus).toUpperCase().includes("NON"));
+          const acKey = isAc ? "AC" : "Non-AC";
+
+          const overrideRate = matchedOverride.rates?.[acKey] ??
+            matchedOverride.rates?.[resolvedAcStatus] ??
+            (isAc ? (matchedOverride.ac_rate ?? matchedOverride.rates?.AC) : (matchedOverride.non_ac_rate ?? matchedOverride.rates?.["Non-AC"])) ??
             matchedOverride.rates?.all ??
             matchedOverride.override_rate ??
             matchedOverride.rate ??
@@ -1323,6 +1402,9 @@ export const StorageService = {
 
     const totalAmount = Math.round(roomBaseCharge + extraGuestCharge);
     const avgBaseRate = nights > 0 ? Math.round(roomBaseCharge / (parsedQty * nights)) : standardBaseRate;
+    const effectiveExtraPersonRate = (nightBreakdowns.length > 0 && hasSpecialDateRate)
+      ? Math.round(nightBreakdowns.reduce((sum, n) => sum + n.extraPersonRate, 0) / nightBreakdowns.length)
+      : standardExtraPersonRate;
 
     return {
       numberOfNights: nights,
@@ -1338,7 +1420,7 @@ export const StorageService = {
       includedGuests,
       chargeableGuests,
       extraGuests,
-      extraPersonRate: standardExtraPersonRate,
+      extraPersonRate: effectiveExtraPersonRate,
       extraGuestCharge,
       totalAmount,
       maxAllowedGuests,

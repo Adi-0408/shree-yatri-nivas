@@ -213,7 +213,12 @@ export const Home = () => {
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '2rem' }}>
             {rooms.slice(0, 3).map((room) => (
-              <RoomCard key={room.room_id} room={room} onOpenDetails={setSelectedRoom} />
+              <RoomCard
+                key={room.room_id}
+                room={room}
+                onOpenDetails={setSelectedRoom}
+                searchDates={{ checkIn, checkOut, guests }}
+              />
             ))}
           </div>
         </div>

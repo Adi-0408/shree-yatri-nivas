@@ -54,5 +54,13 @@ export const PricingService = {
       // fallback to client-side calculation
     }
     return StorageService.calculateBookingCost(params);
+  },
+
+  async saveDateRangeRate(rateData, adminUser = "Admin") {
+    return StorageService.saveDateRangeRate(rateData, adminUser);
+  },
+
+  async deleteDateRangeRate(id, adminUser = "Admin") {
+    return StorageService.deleteDateRangeRate(id, adminUser);
   }
 };

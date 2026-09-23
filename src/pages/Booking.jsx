@@ -47,10 +47,10 @@ export const Booking = () => {
   const tomorrowStr = tomorrow.toISOString().split('T')[0];
 
   const [selectedRoomId, setSelectedRoomId] = useState(searchParams.get('roomId') || 'SYN-RM-AC');
-  const [checkIn, setCheckIn] = useState(todayStr);
-  const [checkOut, setCheckOut] = useState(tomorrowStr);
-  const [roomQty, setRoomQty] = useState(1);
-  const [adults, setAdults] = useState(2);
+  const [checkIn, setCheckIn] = useState(searchParams.get('checkIn') || todayStr);
+  const [checkOut, setCheckOut] = useState(searchParams.get('checkOut') || tomorrowStr);
+  const [roomQty, setRoomQty] = useState(Math.max(1, parseInt(searchParams.get('roomQty'), 10) || 1));
+  const [adults, setAdults] = useState(Math.max(1, parseInt(searchParams.get('guests'), 10) || 2));
   const [childrenCount, setChildrenCount] = useState(0);
   const [childrenAges, setChildrenAges] = useState([]);
   const [pricingConfig, setPricingConfig] = useState(StorageService.getPricingConfig());
@@ -400,10 +400,30 @@ export const Booking = () => {
                         setSelectedRoomId(newId);
                         setRoomQty(1);
                       }}
-                      options={rooms.map((r) => ({
-                        value: r.room_id,
-                        label: `${r.room_name} (${r.ac_status}) — ₹{r.price}/night (${r.total_quantity} Available, Max ${r.capacity} Guests/room)`
-                      }))}
+                      options={rooms.map((r) => {
+                        let displayPrice = r.price;
+                        let specialTag = '';
+                        if (checkIn && checkOut) {
+                          const est = StorageService.calculateBookingCost({
+                            roomId: r.room_id,
+                            acStatus: r.ac_status,
+                            checkIn,
+                            checkOut,
+                            roomQty: 1,
+                            adults: 2
+                          });
+                          if (est?.baseRate) {
+                            displayPrice = est.baseRate;
+                            if (est.hasSpecialDateRate) {
+                              specialTag = ' ✨ Seasonal Tariff';
+                            }
+                          }
+                        }
+                        return {
+                          value: r.room_id,
+                          label: `${r.room_name} (${r.ac_status}) — ₹${displayPrice.toLocaleString('en-IN')}/night${specialTag} (${r.total_quantity} Available, Max ${r.capacity} Guests/room)`
+                        };
+                      })}
                     />
                   </div>
 
@@ -693,6 +713,24 @@ export const Booking = () => {
                         ₹{(priceBreakdown.roomBaseCharge || 0).toLocaleString('en-IN')}
                       </span>
                     </div>
+
+                    {/* Night Breakdown Detail Pill List if date-range rate is active */}
+                    {priceBreakdown.hasSpecialDateRate && priceBreakdown.nightBreakdowns && priceBreakdown.nightBreakdowns.length > 0 && (
+                      <div style={{ backgroundColor: '#F8FAFC', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-light)', padding: '0.65rem 0.85rem', marginBottom: '0.85rem', fontSize: '0.78rem' }}>
+                        <div style={{ fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.4rem', display: 'flex', justifyContent: 'space-between' }}>
+                          <span>Date-wise Tariff Breakdown:</span>
+                          <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{priceBreakdown.numberOfNights} Night{priceBreakdown.numberOfNights > 1 ? 's' : ''}</span>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          {priceBreakdown.nightBreakdowns.map((nb, idx) => (
+                            <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', color: nb.isOverride ? 'var(--primary)' : 'var(--text-secondary)' }}>
+                              <span>• {nb.date}: {nb.isOverride ? `${nb.overrideName || 'Advance Rate'}` : 'Standard Base Rate'}</span>
+                              <span style={{ fontWeight: 600 }}>₹{(nb.rate * priceBreakdown.roomQty).toLocaleString('en-IN')}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
                     {/* Line 2: Extra Guest Charge */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem', fontSize: '0.9rem' }}>

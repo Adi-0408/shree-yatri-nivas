@@ -1,12 +1,30 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Star, Wind, Check, Eye, ArrowRight } from 'lucide-react';
+import { Users, Star, Wind, Check, Eye, ArrowRight, Sparkles } from 'lucide-react';
+import { StorageService } from '../services/storageService';
 
-export const RoomCard = ({ room, onOpenDetails }) => {
+export const RoomCard = ({ room, onOpenDetails, searchDates }) => {
   const navigate = useNavigate();
 
+  const dynamicPrice = useMemo(() => {
+    if (!searchDates?.checkIn || !searchDates?.checkOut) return null;
+    return StorageService.calculateBookingCost({
+      roomId: room.room_id,
+      acStatus: room.ac_status,
+      checkIn: searchDates.checkIn,
+      checkOut: searchDates.checkOut,
+      roomQty: 1,
+      adults: 2
+    });
+  }, [room.room_id, room.ac_status, searchDates?.checkIn, searchDates?.checkOut]);
+
   const handleBookNow = () => {
-    navigate(`/booking?roomId=${room.room_id}`, { viewTransition: true });
+    const params = new URLSearchParams();
+    params.set('roomId', room.room_id);
+    if (searchDates?.checkIn) params.set('checkIn', searchDates.checkIn);
+    if (searchDates?.checkOut) params.set('checkOut', searchDates.checkOut);
+    if (searchDates?.guests) params.set('guests', searchDates.guests);
+    navigate(`/booking?${params.toString()}`, { viewTransition: true });
   };
 
   const defaultImg = "https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1200&q=80";
@@ -74,16 +92,30 @@ export const RoomCard = ({ room, onOpenDetails }) => {
 
         {/* Pricing Policy Note */}
         <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', backgroundColor: 'var(--bg-subtle)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', marginBottom: '1rem', lineHeight: '1.4' }}>
-          • Extra person (adult or child &gt;4y): <strong>₹700/night</strong>. Children under 4 stay <strong>free</strong>.
+          • Extra person (adult or child &gt;4y): <strong>₹{dynamicPrice?.extraPersonRate || 700}/night</strong>. Children under 4 stay <strong>free</strong>.
         </div>
 
         <div className="room-card-footer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto', paddingTop: '0.75rem', borderTop: '1px solid var(--border-light)' }}>
           <div>
-            <div style={{ fontSize: '1.45rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.02em', display: 'flex', alignItems: 'baseline' }}>
-              ₹{(room.price || 0).toLocaleString('en-IN')}
-              <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-muted)', marginLeft: '4px' }}>/ night</span>
-            </div>
-            <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>standard 2 persons tariff</div>
+            {dynamicPrice?.hasSpecialDateRate ? (
+              <>
+                <div style={{ fontSize: '1.45rem', fontWeight: 800, color: 'var(--primary)', letterSpacing: '-0.02em', display: 'flex', alignItems: 'baseline' }}>
+                  ₹{(dynamicPrice.baseRate || room.price || 0).toLocaleString('en-IN')}
+                  <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-muted)', marginLeft: '4px' }}>/ night</span>
+                </div>
+                <div style={{ fontSize: '0.74rem', color: 'var(--gold-hover)', fontWeight: 600 }}>
+                  ✨ Seasonal Offer (was ₹{(room.price || 0).toLocaleString('en-IN')})
+                </div>
+              </>
+            ) : (
+              <>
+                <div style={{ fontSize: '1.45rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.02em', display: 'flex', alignItems: 'baseline' }}>
+                  ₹{(room.price || 0).toLocaleString('en-IN')}
+                  <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-muted)', marginLeft: '4px' }}>/ night</span>
+                </div>
+                <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>standard 2 persons tariff</div>
+              </>
+            )}
           </div>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <button

@@ -194,7 +194,12 @@ export const Rooms = () => {
           {filteredRooms.length > 0 ? (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '2rem' }}>
               {filteredRooms.map((room) => (
-                <RoomCard key={room.room_id} room={room} onOpenDetails={setSelectedRoom} />
+                <RoomCard
+                  key={room.room_id}
+                  room={room}
+                  onOpenDetails={setSelectedRoom}
+                  searchDates={{ checkIn, checkOut, guests: capacityFilter !== 'all' ? capacityFilter : '2' }}
+                />
               ))}
             </div>
           ) : (
