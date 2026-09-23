@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, Children } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronDown, Check } from 'lucide-react';
 
 export const CustomSelect = ({
@@ -17,7 +18,9 @@ export const CustomSelect = ({
   style = {}
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [menuCoords, setMenuCoords] = useState(null);
   const containerRef = useRef(null);
+  const menuRef = useRef(null);
 
   // Extract options from props OR child <option> tags
   const options = React.useMemo(() => {
@@ -48,10 +51,72 @@ export const CustomSelect = ({
   // Find currently selected option
   const selectedOption = options.find(opt => String(opt.value) === String(value));
 
+  // Compute fixed positioning coordinates for portaled menu
+  const updatePosition = () => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+
+    // If trigger element has scrolled off screen, close dropdown
+    if (rect.bottom < -20 || rect.top > window.innerHeight + 20 || rect.right < -20 || rect.left > window.innerWidth + 20) {
+      setIsOpen(false);
+      return;
+    }
+
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    const estimatedMenuHeight = Math.min(260, (options.length || 1) * 44 + 20);
+    const openUp = spaceBelow < estimatedMenuHeight && spaceAbove > spaceBelow;
+
+    const minW = triggerClassName ? 150 : rect.width;
+    let left = rect.left;
+    if (left + minW > window.innerWidth - 12) {
+      left = Math.max(12, window.innerWidth - minW - 12);
+    }
+
+    setMenuCoords({
+      top: openUp ? undefined : Math.round(rect.bottom + 4),
+      bottom: openUp ? Math.round(window.innerHeight - rect.top + 4) : undefined,
+      left: Math.max(8, Math.round(left)),
+      width: Math.round(rect.width),
+      minWidth: Math.round(minW)
+    });
+  };
+
+  const handleToggle = () => {
+    if (disabled) return;
+    if (!isOpen) {
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - rect.bottom;
+        const spaceAbove = rect.top;
+        const estimatedMenuHeight = Math.min(260, (options.length || 1) * 44 + 20);
+        const openUp = spaceBelow < estimatedMenuHeight && spaceAbove > spaceBelow;
+
+        const minW = triggerClassName ? 150 : rect.width;
+        let left = rect.left;
+        if (left + minW > window.innerWidth - 12) {
+          left = Math.max(12, window.innerWidth - minW - 12);
+        }
+
+        setMenuCoords({
+          top: openUp ? undefined : Math.round(rect.bottom + 4),
+          bottom: openUp ? Math.round(window.innerHeight - rect.top + 4) : undefined,
+          left: Math.max(8, Math.round(left)),
+          width: Math.round(rect.width),
+          minWidth: Math.round(minW)
+        });
+      }
+    }
+    setIsOpen(!isOpen);
+  };
+
   // Close on outside click or Escape key
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (containerRef.current && !containerRef.current.contains(e.target)) {
+      if (
+        containerRef.current && !containerRef.current.contains(e.target) &&
+        menuRef.current && !menuRef.current.contains(e.target)
+      ) {
         setIsOpen(false);
       }
     };
@@ -71,6 +136,23 @@ export const CustomSelect = ({
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [isOpen]);
+
+  // Recalculate menu position on scroll/resize
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleScrollOrResize = () => {
+      updatePosition();
+    };
+
+    window.addEventListener('resize', handleScrollOrResize);
+    window.addEventListener('scroll', handleScrollOrResize, true);
+
+    return () => {
+      window.removeEventListener('resize', handleScrollOrResize);
+      window.removeEventListener('scroll', handleScrollOrResize, true);
+    };
+  }, [isOpen, options.length]);
 
   const handleSelect = (optVal) => {
     if (disabled) return;
@@ -105,7 +187,7 @@ export const CustomSelect = ({
       <button
         type="button"
         disabled={disabled}
-        onClick={() => !disabled && setIsOpen(!isOpen)}
+        onClick={handleToggle}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
         className={triggerClassName ? `${triggerClassName} ${isOpen ? 'active' : ''}` : `form-control syn-select-trigger ${isOpen ? 'active' : ''}`}
@@ -158,20 +240,23 @@ export const CustomSelect = ({
       </button>
 
       {/* Themed Dropdown Options Menu */}
-      {isOpen && (
+      {isOpen && menuCoords && createPortal(
         <div
+          ref={menuRef}
           role="listbox"
           className="syn-select-menu"
           style={{
-            position: 'absolute',
-            top: 'calc(100% + 4px)',
-            left: 0,
-            minWidth: triggerClassName ? '145px' : '100%',
+            position: 'fixed',
+            top: menuCoords.top !== undefined ? `${menuCoords.top}px` : undefined,
+            bottom: menuCoords.bottom !== undefined ? `${menuCoords.bottom}px` : undefined,
+            left: `${menuCoords.left}px`,
+            minWidth: `${menuCoords.minWidth}px`,
+            maxWidth: 'calc(100vw - 24px)',
             backgroundColor: '#FFFFFF',
             borderRadius: 'var(--radius-md)',
             border: '1px solid var(--border-gold)',
             boxShadow: '0 14px 32px rgba(44, 32, 20, 0.16), 0 2px 8px rgba(44, 32, 20, 0.06)',
-            zIndex: 500,
+            zIndex: 99999,
             maxHeight: '260px',
             overflowY: 'auto',
             padding: '0.35rem',
@@ -227,7 +312,8 @@ export const CustomSelect = ({
               No options available
             </div>
           )}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
