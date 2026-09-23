@@ -254,49 +254,6 @@ export const Contact = () => {
             </div>
           </div>
 
-          {/* Property Rules Section */}
-          <div style={{ maxWidth: '640px', margin: '0 auto 4rem' }}>
-            <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-              <span className="badge badge-gold" style={{ marginBottom: '0.5rem' }}>House Policies</span>
-              <h2 style={{ fontSize: '1.8rem', color: 'var(--text-main)' }}>Property Rule</h2>
-            </div>
-            <div style={{
-              backgroundColor: '#F7EDC7',
-              borderRadius: '16px',
-              padding: '2rem 2.25rem',
-              border: '2.5px solid #C49BDF',
-              boxShadow: '0 8px 24px rgba(0,0,0,0.06)'
-            }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.95rem' }}>
-                {[
-                  "Check In Time 3:00 pm",
-                  "Check Out Time 10:00 am",
-                  "Pets Are Not Allowed",
-                  "Smoking Not Allowed",
-                  "Govt. Id(s) Not Mandatory",
-                  "Local Id(s) Allowed",
-                  "Visitors Are Not Allowed",
-                  "Outside Food And Beverage Not Allowed",
-                  "Children Aged 0 to 4 Years Stay Free Of Charge",
-                  "Children Aged 5 to 17 Years are Chargeable"
-                ].map((ruleText, idx) => (
-                  <div key={idx} style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.75rem',
-                    fontSize: '1.05rem',
-                    fontWeight: 700,
-                    color: '#6E1B00',
-                    lineHeight: 1.35
-                  }}>
-                    <span style={{ fontSize: '1.2rem', color: '#6E1B00', fontWeight: 900 }}>✔</span>
-                    <span>{ruleText}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
           {/* FAQs Accordion */}
           <div style={{ maxWidth: '820px', margin: '0 auto' }}>
             <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
