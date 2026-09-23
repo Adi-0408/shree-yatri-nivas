@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { PROPERTY_INFO } from '../services/seedData';
 import { 
@@ -21,10 +22,15 @@ export const RoomDetailsModal = ({ room, onClose }) => {
   useEffect(() => {
     if (!room) return;
     document.body.classList.add('modal-open');
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
     return () => {
       document.body.classList.remove('modal-open');
+      window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [room]);
+  }, [room, onClose]);
 
   if (!room) return null;
 
@@ -52,7 +58,7 @@ export const RoomDetailsModal = ({ room, onClose }) => {
     setActiveImgIndex((prev) => (prev - 1 + images.length) % images.length);
   };
 
-  return (
+  return createPortal(
     <div className="modal-overlay" onClick={onClose} role="dialog" aria-modal="true">
       <div className="modal-dialog" style={{ maxWidth: '780px' }} onClick={(e) => e.stopPropagation()}>
         {/* Header */}
@@ -67,17 +73,32 @@ export const RoomDetailsModal = ({ room, onClose }) => {
                 </span>
               )}
             </div>
-            <h2 style={{ fontSize: '1.45rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.01em' }}>{room.room_name}</h2>
+            <h2 style={{ fontSize: '1.45rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.01em', margin: 0 }}>{room.room_name}</h2>
           </div>
-          <button onClick={onClose} style={{ padding: '0.4rem', color: 'var(--text-muted)', borderRadius: 'var(--radius-md)', transition: 'var(--transition-fast)' }} aria-label="Close modal">
+          <button 
+            onClick={onClose} 
+            style={{ 
+              padding: '0.45rem', 
+              color: 'var(--text-muted)', 
+              borderRadius: 'var(--radius-md)', 
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'var(--transition-fast)' 
+            }} 
+            aria-label="Close modal"
+          >
             <X size={22} />
           </button>
         </div>
 
         {/* Body */}
-        <div className="modal-body" style={{ maxHeight: '72vh', overflowY: 'auto' }}>
+        <div className="modal-body">
           {/* Gallery Carousel */}
-          <div style={{ position: 'relative', height: '320px', borderRadius: 'var(--radius-lg)', overflow: 'hidden', marginBottom: '0.75rem', backgroundColor: 'var(--bg-subtle)' }}>
+          <div style={{ position: 'relative', height: 'clamp(210px, 32vh, 320px)', borderRadius: 'var(--radius-lg)', overflow: 'hidden', marginBottom: '0.75rem', backgroundColor: 'var(--bg-subtle)' }}>
             <img
               src={images[activeImgIndex]}
               alt={`${room.room_name} - Photo ${activeImgIndex + 1}`}
@@ -246,6 +267,7 @@ export const RoomDetailsModal = ({ room, onClose }) => {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

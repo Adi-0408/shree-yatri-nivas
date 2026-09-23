@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { StorageService } from '../services/storageService';
 import { PricingService } from '../services/pricingService';
@@ -1911,7 +1912,7 @@ export const Admin = ({ initialTab }) => {
       </main>
 
       {/* ADD / EDIT ROOM MODAL */}
-      {roomModalOpen && (
+      {roomModalOpen && createPortal(
         <div className="modal-overlay" onClick={() => setRoomModalOpen(false)}>
           <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
@@ -2014,7 +2015,8 @@ export const Admin = ({ initialTab }) => {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

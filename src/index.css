@@ -1697,33 +1697,55 @@ body.modal-open {
   border-radius: var(--radius-xl);
   width: 100%;
   max-width: 620px;
-  max-height: 90vh;
-  overflow-y: auto;
+  max-height: calc(100vh - 3rem);
+  max-height: calc(100dvh - 3rem);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   box-shadow: var(--shadow-xl);
   border: 1px solid var(--border-gold);
   animation: scaleUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  margin: auto;
+  position: relative;
+}
+
+.modal-dialog > form {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  overflow: hidden;
+  min-height: 0;
 }
 
 .modal-header {
-  padding: 1.5rem 1.75rem;
+  padding: 1.25rem 1.75rem;
   border-bottom: 1px solid var(--border-light);
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-shrink: 0;
+  background-color: #FFFFFF;
+  z-index: 2;
 }
 
 .modal-body {
-  padding: 1.75rem;
+  padding: 1.5rem 1.75rem;
+  overflow-y: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  -webkit-overflow-scrolling: touch;
 }
 
 .modal-footer {
-  padding: 1.25rem 1.75rem;
+  padding: 1rem 1.75rem;
   border-top: 1px solid var(--border-light);
   background-color: var(--bg-subtle);
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 0.75rem;
+  flex-shrink: 0;
+  z-index: 2;
 }
 
 /* ==========================================================================
@@ -2027,8 +2049,7 @@ body.modal-open {
 
 /* Fallback & Enhanced Page Transition Container */
 .syn-page-transition {
-  animation: synPageEnter 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  will-change: opacity, transform;
+  animation: synPageEnter 0.28s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes synPageEnter {
@@ -2038,7 +2059,7 @@ body.modal-open {
   }
   100% {
     opacity: 1;
-    transform: translateY(0);
+    transform: none;
   }
 }
 
@@ -2382,9 +2403,24 @@ body.modal-open {
     border-top-left-radius: var(--radius-xl) !important;
     border-top-right-radius: var(--radius-xl) !important;
     max-height: 92dvh;
-    width: 100%;
-    max-width: 100%;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
     animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .modal-header {
+    padding: 1.1rem 1.25rem;
+  }
+  .modal-body {
+    padding: 1.25rem;
+  }
+  .modal-footer {
+    padding: 0.85rem 1.25rem;
+    gap: 0.5rem;
+  }
+  .modal-footer .btn {
+    flex: 1 1 auto;
+    justify-content: center;
   }
 
   /* ---- Room Details Modal ---- */

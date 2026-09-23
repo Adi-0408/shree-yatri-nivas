@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { X, Lock, Mail, Phone, User, MapPin, Loader2, ShieldCheck } from 'lucide-react';
@@ -30,10 +31,15 @@ export const AuthModal = () => {
   useEffect(() => {
     if (!isAuthModalOpen) return;
     document.body.classList.add('modal-open');
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') closeAuthModal();
+    };
+    window.addEventListener('keydown', handleKeyDown);
     return () => {
       document.body.classList.remove('modal-open');
+      window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isAuthModalOpen]);
+  }, [isAuthModalOpen, closeAuthModal]);
 
   if (!isAuthModalOpen) return null;
 
@@ -56,7 +62,7 @@ export const AuthModal = () => {
     });
   };
 
-  return (
+  return createPortal(
     <div className="modal-overlay" onClick={closeAuthModal} role="dialog" aria-modal="true">
       <div className="modal-dialog" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '460px' }}>
         {/* Header */}
@@ -308,6 +314,7 @@ export const AuthModal = () => {
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
