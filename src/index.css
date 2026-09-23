@@ -1308,8 +1308,11 @@ select option:checked {
    ========================================================================== */
 .admin-layout {
   display: grid;
-  grid-template-columns: 270px 1fr;
+  grid-template-columns: 270px minmax(0, 1fr);
   min-height: calc(100vh - 72px);
+  width: 100%;
+  max-width: 100vw;
+  box-sizing: border-box;
 }
 
 .admin-sidebar {
@@ -1318,6 +1321,52 @@ select option:checked {
   padding: 1.75rem 1.15rem;
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
+}
+
+.admin-sidebar-header {
+  padding-bottom: 1.25rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.admin-sidebar-brand {
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-status-pill {
+  margin-top: 0.75rem;
+  padding: 0.45rem 0.65rem;
+  border-radius: var(--radius-sm);
+  background-color: var(--primary-light);
+  border: 1px solid rgba(15, 58, 58, 0.15);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.72rem;
+  color: var(--primary);
+  font-weight: 600;
+  width: fit-content;
+}
+
+.admin-sidebar-actions-mobile {
+  display: none;
+}
+
+.admin-sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+}
+
+.admin-sidebar-footer {
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-light);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
 .admin-nav-item {
@@ -1354,6 +1403,126 @@ select option:checked {
   padding: 2.25rem;
   background-color: var(--bg-primary);
   animation: fadeIn 0.3s ease;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+/* Admin Card and Section Styles */
+.admin-card {
+  background-color: #FFFFFF;
+  border-radius: var(--radius-lg);
+  padding: 1.75rem;
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 2rem;
+  box-sizing: border-box;
+}
+
+.admin-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.admin-page-header {
+  margin-bottom: 2rem;
+}
+
+.admin-page-header-flex {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.admin-filter-bar {
+  background-color: #FFFFFF;
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  border: 1px solid var(--border-light);
+  margin-bottom: 1.5rem;
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  box-sizing: border-box;
+}
+
+.admin-filter-search {
+  flex: 1;
+  min-width: 220px;
+}
+
+.admin-filter-status {
+  width: 180px;
+}
+
+.admin-pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.admin-inventory-row {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+
+.admin-actions-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #FFFFFF;
+  padding: 1.5rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-gold);
+  box-shadow: var(--shadow-md);
+  margin-bottom: 2.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+  box-sizing: border-box;
+}
+
+.admin-date-range-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.admin-staff-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.admin-login-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 80vh;
+  padding: 2rem 1rem;
+  box-sizing: border-box;
+}
+
+.admin-login-card {
+  background-color: #FFFFFF;
+  border-radius: var(--radius-xl);
+  padding: 2.5rem;
+  border: 1px solid var(--border-gold);
+  box-shadow: var(--shadow-xl);
+  width: 100%;
+  max-width: 460px;
+  box-sizing: border-box;
 }
 
 .kpi-grid {
@@ -1931,12 +2100,74 @@ body.modal-open {
   /* Footer */
   .footer-grid { grid-template-columns: 1fr 1fr; gap: 2rem; }
 
-  /* Admin */
-  .admin-layout { grid-template-columns: 1fr; }
+  /* Admin Layout & Sidebar */
+  .admin-layout {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+    min-height: auto !important;
+  }
   .admin-sidebar {
-    border-right: none;
-    border-bottom: 1px solid var(--border-light);
-    padding: 1.25rem;
+    border-right: none !important;
+    border-bottom: 1px solid var(--border-light) !important;
+    padding: 0.85rem 1rem 0.65rem !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    background-color: #FFFFFF !important;
+  }
+  .admin-sidebar-header {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding-bottom: 0.65rem !important;
+    margin-bottom: 0.65rem !important;
+    border-bottom: 1px solid var(--border-light) !important;
+    flex-wrap: wrap !important;
+    gap: 0.5rem !important;
+  }
+  .admin-sidebar-actions-mobile {
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+  }
+  .admin-sidebar-footer {
+    display: none !important;
+  }
+  .admin-sidebar-nav {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    gap: 0.4rem !important;
+    padding: 0.2rem 0 0.4rem !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+  }
+  .admin-sidebar-nav::-webkit-scrollbar {
+    display: none !important;
+  }
+  .admin-nav-item {
+    flex-shrink: 0 !important;
+    width: auto !important;
+    font-size: 0.82rem !important;
+    padding: 0.45rem 0.85rem !important;
+    white-space: nowrap !important;
+    border-radius: var(--radius-full) !important;
+    border: 1px solid var(--border-light) !important;
+    background-color: var(--bg-surface) !important;
+    color: var(--text-secondary) !important;
+    margin-bottom: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.4rem !important;
+  }
+  .admin-nav-item.active {
+    background-color: var(--primary) !important;
+    color: #FFFFFF !important;
+    border-color: var(--primary) !important;
+    box-shadow: 0 2px 6px rgba(15, 58, 58, 0.25) !important;
   }
 
   /* Navbar */
@@ -2020,7 +2251,6 @@ body.modal-open {
     grid-template-columns: 1fr !important;
     gap: 2rem;
   }
-  /* Make the sticky form not sticky on mobile */
   .review-form-sticky {
     position: static !important;
     top: auto !important;
@@ -2036,42 +2266,99 @@ body.modal-open {
     gap: 1rem;
   }
 
-  /* ---- Admin layout ---- */
-  .admin-sidebar {
-    padding: 1rem;
-  }
-  /* Admin sidebar nav: horizontal scrolling row on small screens */
-  .admin-sidebar nav {
-    flex-direction: row !important;
-    flex-wrap: nowrap !important;
-    overflow-x: auto;
-    gap: 0.25rem !important;
-    padding-bottom: 0.25rem;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-  }
-  .admin-sidebar nav::-webkit-scrollbar { display: none; }
-  .admin-nav-item {
-    flex-shrink: 0;
-    font-size: 0.78rem;
-    padding: 0.55rem 0.75rem;
-    white-space: nowrap;
-    border-left: none !important;
-    border-bottom: 3px solid transparent;
-  }
-  .admin-nav-item.active {
-    border-bottom-color: var(--primary);
-  }
+  /* ---- Admin Layout & Content ---- */
   .admin-content {
-    padding: 1.25rem !important;
+    padding: 1.15rem 0.85rem !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
+  }
+  .admin-card {
+    padding: 1.15rem 0.9rem !important;
+    border-radius: var(--radius-md) !important;
+    margin-bottom: 1.25rem !important;
+  }
+  .admin-page-header {
+    margin-bottom: 1.25rem !important;
+  }
+  .admin-page-header h1 {
+    font-size: 1.45rem !important;
+    line-height: 1.25 !important;
+  }
+  .admin-page-header-flex {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.75rem !important;
+  }
+  .admin-header-btn {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  /* Admin Grids */
+  .admin-pricing-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1.15rem !important;
+    margin-bottom: 1.5rem !important;
+  }
+  .admin-staff-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1.15rem !important;
+    margin-bottom: 1.5rem !important;
+  }
+  .admin-inventory-row {
+    grid-template-columns: 1fr !important;
+    gap: 0.75rem !important;
+    align-items: stretch !important;
+  }
+  .admin-actions-card {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    text-align: left !important;
+    gap: 1rem !important;
+    padding: 1.25rem 1rem !important;
+    margin-bottom: 1.75rem !important;
+  }
+  .admin-actions-card button {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+  .admin-filter-bar {
+    flex-direction: column !important;
+    gap: 0.75rem !important;
+    padding: 1rem 0.85rem !important;
+  }
+  .admin-filter-search,
+  .admin-filter-status {
+    width: 100% !important;
+    min-width: 100% !important;
+  }
+  .admin-date-range-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0.75rem !important;
+  }
+  .admin-btn-block {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+  .admin-modal-footer {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 0.5rem !important;
+  }
+  .admin-modal-footer .btn {
+    flex: 1 !important;
+    justify-content: center !important;
   }
 
   /* ---- KPI grid ---- */
   .kpi-grid {
     grid-template-columns: 1fr 1fr;
-    gap: 1rem;
+    gap: 0.85rem;
   }
-  .kpi-val { font-size: 1.6rem; }
+  .kpi-val { font-size: 1.5rem; }
 
   /* ---- Modal dialog ---- */
   .modal-overlay {
@@ -2098,7 +2385,7 @@ body.modal-open {
   .admin-room-form-grid-2col,
   .admin-room-form-grid-3col {
     grid-template-columns: 1fr !important;
-    gap: 1rem !important;
+    gap: 0.85rem !important;
   }
 
   /* ---- Voucher card tear notches ---- */
@@ -2107,8 +2394,20 @@ body.modal-open {
 
   /* ---- Table horizontal scroll hint ---- */
   .table-responsive {
-    -webkit-overflow-scrolling: touch;
-    border-radius: var(--radius-sm);
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    border-radius: var(--radius-sm) !important;
+  }
+  .syn-table th {
+    white-space: nowrap !important;
+    font-size: 0.72rem !important;
+    padding: 0.65rem 0.65rem !important;
+  }
+  .syn-table td {
+    padding: 0.75rem 0.65rem !important;
+    font-size: 0.82rem !important;
   }
 
   /* ---- Footer ---- */
@@ -2136,8 +2435,10 @@ body.modal-open {
   .hero-section { padding: 3.75rem 0 2.75rem; }
   .search-widget-card { padding: 1rem; }
 
-  /* KPI grid stacks to 1 column on very small screens */
+  /* KPI grid stacks to 1 column on small screens */
   .kpi-grid { grid-template-columns: 1fr; }
+  .kpi-card { padding: 1rem; }
+  .kpi-val { font-size: 1.45rem; }
 
   /* Booking wizard labels hidden, just show circles */
   .wizard-label { display: none; }
@@ -2169,9 +2470,30 @@ body.modal-open {
   /* Sections vertical spacing */
   section { padding-top: 2.75rem !important; padding-bottom: 2.75rem !important; }
 
-  /* Admin table compacted */
-  .syn-table th,
-  .syn-table td { padding: 0.75rem 0.85rem; }
+  /* Admin Content & Login on small screens */
+  .admin-content {
+    padding: 0.85rem 0.65rem !important;
+  }
+  .admin-card {
+    padding: 1rem 0.75rem !important;
+  }
+  .admin-login-card {
+    padding: 1.5rem 1rem !important;
+    border-radius: var(--radius-lg) !important;
+  }
+  .admin-sidebar-header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.65rem !important;
+  }
+  .admin-sidebar-actions-mobile {
+    width: 100% !important;
+    justify-content: space-between !important;
+  }
+  .admin-sidebar-actions-mobile .btn {
+    flex: 1 !important;
+    justify-content: center !important;
+  }
 
   /* Contact form inner row */
   .contact-inner-name-mobile-grid {

@@ -484,8 +484,8 @@ export const Admin = ({ initialTab }) => {
   // AUTH GUARD: For unauthenticated users or non-staff devotees
   if (!isAdminLoggedIn) {
     return (
-      <div className="syn-main-content" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '80vh', padding: '2rem 1rem' }}>
-        <div style={{ backgroundColor: '#FFFFFF', borderRadius: 'var(--radius-xl)', padding: '2.5rem', border: '1px solid var(--border-gold)', boxShadow: 'var(--shadow-xl)', width: '100%', maxWidth: '460px' }}>
+      <div className="admin-login-wrapper syn-main-content">
+        <div className="admin-login-card">
           <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
             <div style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundColor: 'var(--primary-light)', color: 'var(--primary)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem' }}>
               <ShieldAlert size={32} />
@@ -580,78 +580,91 @@ export const Admin = ({ initialTab }) => {
     <div className="admin-layout syn-main-content">
       {/* Sidebar */}
       <aside className="admin-sidebar">
-        <div style={{ paddingBottom: '1.25rem', marginBottom: '1.25rem', borderBottom: '1px solid var(--border-light)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <ShieldAlert size={20} color="var(--primary)" />
-            <span style={{ fontWeight: 800, fontSize: '1.1rem' }}>ADMIN PORTAL</span>
-          </div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>Front Desk &amp; Tariffs Manager</div>
+        <div className="admin-sidebar-header">
+          <div className="admin-sidebar-brand">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <ShieldAlert size={20} color="var(--primary)" />
+              <span style={{ fontWeight: 800, fontSize: '1.05rem' }}>ADMIN PORTAL</span>
+            </div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>Front Desk &amp; Tariffs</div>
 
-          {/* Cloud Firestore Live Status */}
-          <div style={{
-            marginTop: '0.75rem',
-            padding: '0.45rem 0.65rem',
-            borderRadius: 'var(--radius-sm)',
-            backgroundColor: 'var(--primary-light)',
-            border: '1px solid rgba(15, 58, 58, 0.15)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.45rem',
-            fontSize: '0.72rem',
-            color: 'var(--primary)',
-            fontWeight: 600
-          }}>
-            <span style={{ width: 7, height: 7, borderRadius: '50%', backgroundColor: '#15803D', display: 'inline-block' }} />
-            <span>Firebase: hotel-fad04 (Live)</span>
+            {/* Cloud Firestore Live Status */}
+            <div className="admin-status-pill">
+              <span style={{ width: 7, height: 7, borderRadius: '50%', backgroundColor: '#15803D', display: 'inline-block' }} />
+              <span>Firebase: hotel-fad04 (Live)</span>
+            </div>
+          </div>
+
+          {/* Quick Actions Toolbar for Mobile View */}
+          <div className="admin-sidebar-actions-mobile">
+            <button
+              onClick={handleCloudSync}
+              disabled={syncingCloud}
+              className="btn btn-secondary btn-sm"
+              title="Sync all local data to Cloud Firestore"
+              style={{ fontSize: '0.78rem', padding: '0.45rem 0.75rem' }}
+            >
+              <Cloud size={14} color="var(--primary)" />
+              <span>{syncingCloud ? 'Syncing...' : 'Sync'}</span>
+            </button>
+            <button
+              onClick={logoutAdmin}
+              className="btn btn-danger btn-sm"
+              style={{ fontSize: '0.78rem', padding: '0.45rem 0.75rem' }}
+              title="Sign Out Admin"
+            >
+              <LogOut size={14} />
+              <span>Exit</span>
+            </button>
           </div>
         </div>
 
-        <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', flex: 1 }}>
+        <nav className="admin-sidebar-nav">
           <button
             onClick={() => setActiveTab('dashboard')}
             className={`admin-nav-item ${activeTab === 'dashboard' ? 'active' : ''}`}
           >
-            <LayoutDashboard size={18} /> Overview &amp; KPIs
+            <LayoutDashboard size={16} /> Overview
           </button>
           <button
             onClick={() => setActiveTab('bookings')}
             className={`admin-nav-item ${activeTab === 'bookings' ? 'active' : ''}`}
           >
-            <CalendarCheck size={18} /> Bookings ({bookings.length})
+            <CalendarCheck size={16} /> Bookings ({bookings.length})
           </button>
           <button
             onClick={() => setActiveTab('rooms')}
             className={`admin-nav-item ${activeTab === 'rooms' ? 'active' : ''}`}
           >
-            <BedDouble size={18} /> Room Inventory ({rooms.length})
+            <BedDouble size={16} /> Rooms ({rooms.length})
           </button>
           <button
             onClick={() => setActiveTab('pricing')}
             className={`admin-nav-item ${activeTab === 'pricing' ? 'active' : ''}`}
           >
-            <Sliders size={18} /> Pricing &amp; Inventory
+            <Sliders size={16} /> Pricing
           </button>
           <button
             onClick={() => setActiveTab('reviews')}
             className={`admin-nav-item ${activeTab === 'reviews' ? 'active' : ''}`}
           >
-            <Star size={18} /> Reviews Moderation {stats?.pendingReviewsCount > 0 && <span className="badge badge-warning">{stats.pendingReviewsCount}</span>}
+            <Star size={16} /> Reviews {stats?.pendingReviewsCount > 0 && <span className="badge badge-warning" style={{ fontSize: '0.65rem', padding: '2px 5px' }}>{stats.pendingReviewsCount}</span>}
           </button>
           <button
             onClick={() => setActiveTab('customers')}
             className={`admin-nav-item ${activeTab === 'customers' ? 'active' : ''}`}
           >
-            <Users size={18} /> Devotee Accounts ({customers.length})
+            <Users size={16} /> Devotees ({customers.length})
           </button>
           <button
             onClick={() => setActiveTab('staff')}
             className={`admin-nav-item ${activeTab === 'staff' ? 'active' : ''}`}
           >
-            <ShieldCheck size={18} /> Staff &amp; Access ({staffList.length})
+            <ShieldCheck size={16} /> Staff ({staffList.length})
           </button>
         </nav>
 
-        <div style={{ paddingTop: '1.5rem', borderTop: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+        <div className="admin-sidebar-footer">
           <button
             onClick={handleCloudSync}
             disabled={syncingCloud}
@@ -678,7 +691,7 @@ export const Admin = ({ initialTab }) => {
         {/* TAB 1: DASHBOARD OVERVIEW */}
         {activeTab === 'dashboard' && stats && (
           <div>
-            <div style={{ marginBottom: '2rem' }}>
+            <div className="admin-page-header">
               <h1 style={{ fontSize: '1.8rem', color: 'var(--text-main)', marginBottom: '0.25rem' }}>
                 Management Dashboard
               </h1>
@@ -735,9 +748,9 @@ export const Admin = ({ initialTab }) => {
             </div>
 
             {/* Recent Bookings Table */}
-            <div style={{ backgroundColor: '#FFFFFF', borderRadius: 'var(--radius-lg)', padding: '1.75rem', border: '1px solid var(--border-light)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-                <h3 style={{ fontSize: '1.2rem', color: 'var(--text-main)' }}>Recent Reservations</h3>
+            <div className="admin-card">
+              <div className="admin-card-header">
+                <h3 style={{ fontSize: '1.2rem', color: 'var(--text-main)', margin: 0 }}>Recent Reservations</h3>
                 <button onClick={() => setActiveTab('bookings')} className="btn btn-secondary btn-sm">
                   View All ({bookings.length})
                 </button>
@@ -783,16 +796,14 @@ export const Admin = ({ initialTab }) => {
         {/* TAB 2: ALL BOOKINGS MANAGEMENT */}
         {activeTab === 'bookings' && (
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
-              <div>
-                <h1 style={{ fontSize: '1.8rem', color: 'var(--text-main)' }}>Bookings Management</h1>
-                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Search, verify check-ins, and update payment status.</p>
-              </div>
+            <div className="admin-page-header">
+              <h1 style={{ fontSize: '1.8rem', color: 'var(--text-main)', marginBottom: '0.25rem' }}>Bookings Management</h1>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Search, verify check-ins, and update payment status.</p>
             </div>
 
             {/* Filter controls */}
-            <div style={{ backgroundColor: '#FFFFFF', borderRadius: 'var(--radius-md)', padding: '1.25rem', border: '1px solid var(--border-light)', marginBottom: '1.5rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-              <div style={{ flex: 1, minWidth: '220px' }}>
+            <div className="admin-filter-bar">
+              <div className="admin-filter-search">
                 <input
                   type="text"
                   placeholder="Search by Guest Name, Mobile, or Ref ID..."
@@ -801,7 +812,7 @@ export const Admin = ({ initialTab }) => {
                   onChange={(e) => setBookingSearch(e.target.value)}
                 />
               </div>
-              <div style={{ width: '180px' }}>
+              <div className="admin-filter-status">
                 <CustomSelect
                   value={bookingStatusFilter}
                   onChange={(e) => setBookingStatusFilter(e.target.value)}
@@ -897,12 +908,12 @@ export const Admin = ({ initialTab }) => {
         {/* TAB 3: ROOMS INVENTORY CRUD */}
         {activeTab === 'rooms' && (
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+            <div className="admin-page-header admin-page-header-flex">
               <div>
-                <h1 style={{ fontSize: '1.8rem', color: 'var(--text-main)' }}>Room Inventory & Rates</h1>
+                <h1 style={{ fontSize: '1.8rem', color: 'var(--text-main)', marginBottom: '0.25rem' }}>Room Inventory &amp; Rates</h1>
                 <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Manage categories, room quantities, and tariffs.</p>
               </div>
-              <button onClick={handleOpenAddRoom} className="btn btn-primary">
+              <button onClick={handleOpenAddRoom} className="btn btn-primary admin-header-btn">
                 <Plus size={16} /> Add Room Category
               </button>
             </div>
@@ -963,8 +974,8 @@ export const Admin = ({ initialTab }) => {
         {/* TAB 4: REVIEWS MODERATION */}
         {activeTab === 'reviews' && (
           <div>
-            <div style={{ marginBottom: '1.5rem' }}>
-              <h1 style={{ fontSize: '1.8rem', color: 'var(--text-main)' }}>Review Moderation</h1>
+            <div className="admin-page-header">
+              <h1 style={{ fontSize: '1.8rem', color: 'var(--text-main)', marginBottom: '0.25rem' }}>Review Moderation</h1>
               <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Approve or reject reviews before they appear on the public portal.</p>
             </div>
 
@@ -1033,8 +1044,8 @@ export const Admin = ({ initialTab }) => {
         {/* TAB 5: DEVOTEE CUSTOMER ACCOUNTS */}
         {activeTab === 'customers' && (
           <div>
-            <div style={{ marginBottom: '1.5rem' }}>
-              <h1 style={{ fontSize: '1.8rem', color: 'var(--text-main)' }}>Registered Devotee Accounts</h1>
+            <div className="admin-page-header">
+              <h1 style={{ fontSize: '1.8rem', color: 'var(--text-main)', marginBottom: '0.25rem' }}>Registered Devotee Accounts</h1>
               <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Guest users with personal accounts.</p>
             </div>
 
@@ -1070,10 +1081,10 @@ export const Admin = ({ initialTab }) => {
         {/* TAB: PRICING & INVENTORY MANAGEMENT */}
         {activeTab === 'pricing' && (
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+            <div className="admin-page-header admin-page-header-flex">
               <div>
-                <h1 style={{ fontSize: '1.8rem', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                  <Sliders size={26} color="var(--primary)" /> Pricing & Inventory Management
+                <h1 style={{ fontSize: '1.8rem', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.25rem' }}>
+                  <Sliders size={26} color="var(--primary)" /> Pricing &amp; Inventory Management
                 </h1>
                 <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
                   Full role-based authority to dynamically override room tariffs, extra guest rules, and live property room counts.
@@ -1088,10 +1099,10 @@ export const Admin = ({ initialTab }) => {
             </div>
 
             <form onSubmit={handleSavePricing}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+              <div className="admin-pricing-grid">
                 
                 {/* 1. Room Base Rates */}
-                <div style={{ backgroundColor: '#FFFFFF', borderRadius: 'var(--radius-lg)', padding: '1.75rem', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)' }}>
+                <div className="admin-card">
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1.25rem', paddingBottom: '0.75rem', borderBottom: '1px solid var(--border-light)' }}>
                     <div style={{ width: '38px', height: '38px', borderRadius: 'var(--radius-sm)', backgroundColor: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <DollarSign size={20} />
@@ -1144,13 +1155,13 @@ export const Admin = ({ initialTab }) => {
                 </div>
 
                 {/* 2. Occupancy & Extra Person Rules */}
-                <div style={{ backgroundColor: '#FFFFFF', borderRadius: 'var(--radius-lg)', padding: '1.75rem', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)' }}>
+                <div className="admin-card">
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1.25rem', paddingBottom: '0.75rem', borderBottom: '1px solid var(--border-light)' }}>
                     <div style={{ width: '38px', height: '38px', borderRadius: 'var(--radius-sm)', backgroundColor: 'var(--gold-light)', color: 'var(--gold)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <Users size={20} />
                     </div>
                     <div>
-                      <h3 style={{ fontSize: '1.1rem', color: 'var(--text-main)', margin: 0 }}>Extra Guest & Child Policy</h3>
+                      <h3 style={{ fontSize: '1.1rem', color: 'var(--text-main)', margin: 0 }}>Extra Guest &amp; Child Policy</h3>
                       <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Occupancy limits and extra charges</div>
                     </div>
                   </div>
@@ -1202,7 +1213,7 @@ export const Admin = ({ initialTab }) => {
                 </div>
 
                 {/* 3. Room Inventory & Availability */}
-                <div style={{ backgroundColor: '#FFFFFF', borderRadius: 'var(--radius-lg)', padding: '1.75rem', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)' }}>
+                <div className="admin-card">
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1.25rem', paddingBottom: '0.75rem', borderBottom: '1px solid var(--border-light)' }}>
                     <div style={{ width: '38px', height: '38px', borderRadius: 'var(--radius-sm)', backgroundColor: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <BedDouble size={20} />
@@ -1215,7 +1226,7 @@ export const Admin = ({ initialTab }) => {
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '1.15rem' }}>
                     {/* AC Rooms Inventory */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '0.75rem', alignItems: 'flex-end' }}>
+                    <div className="admin-inventory-row">
                       <div className="form-group">
                         <label className="form-label">AC Rooms Count</label>
                         <input
@@ -1265,7 +1276,7 @@ export const Admin = ({ initialTab }) => {
                     </div>
 
                     {/* Non-AC Rooms Inventory */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '0.75rem', alignItems: 'flex-end' }}>
+                    <div className="admin-inventory-row">
                       <div className="form-group">
                         <label className="form-label">Non-AC Rooms Count</label>
                         <input
@@ -1326,7 +1337,7 @@ export const Admin = ({ initialTab }) => {
               </div>
 
               {/* Save Button Action */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#FFFFFF', padding: '1.5rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-gold)', boxShadow: 'var(--shadow-md)', marginBottom: '2.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+              <div className="admin-actions-card">
                 <div>
                   <div style={{ fontWeight: 700, fontSize: '1.05rem', color: 'var(--text-main)' }}>Save &amp; Broadcast Base Pricing Updates</div>
                   <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
@@ -1346,7 +1357,7 @@ export const Admin = ({ initialTab }) => {
             </form>
 
             {/* 4. Date-Range Rate Overrides (15-Day / Seasonal Special Pricing) */}
-            <div style={{ backgroundColor: '#FFFFFF', borderRadius: 'var(--radius-lg)', padding: '1.75rem', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)', marginBottom: '2rem' }}>
+            <div className="admin-card">
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', paddingBottom: '0.75rem', borderBottom: '1px solid var(--border-light)', flexWrap: 'wrap', gap: '0.75rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                   <div style={{ width: '38px', height: '38px', borderRadius: 'var(--radius-sm)', backgroundColor: 'var(--gold-light)', color: 'var(--gold)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -1370,7 +1381,7 @@ export const Admin = ({ initialTab }) => {
                   <Plus size={16} color="var(--primary)" /> Add New Date-Range Rate Rule (e.g. 15 Days at Once)
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
+                <div className="admin-date-range-grid">
                   <div className="form-group">
                     <label className="form-label">Period Name / Reason</label>
                     <input
@@ -1469,7 +1480,7 @@ export const Admin = ({ initialTab }) => {
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
-                  <button type="submit" className="btn btn-primary btn-sm" style={{ minWidth: '180px', justifyContent: 'center' }}>
+                  <button type="submit" className="btn btn-primary btn-sm admin-btn-block" style={{ minWidth: '180px', justifyContent: 'center' }}>
                     <Plus size={16} /> Save Date-Range Rule
                   </button>
                 </div>
@@ -1543,7 +1554,7 @@ export const Admin = ({ initialTab }) => {
             </div>
 
             {/* 5. Pricing Audit Logs */}
-            <div style={{ backgroundColor: '#FFFFFF', borderRadius: 'var(--radius-lg)', padding: '1.75rem', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)' }}>
+            <div className="admin-card">
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1.25rem', paddingBottom: '0.75rem', borderBottom: '1px solid var(--border-light)' }}>
                 <History size={20} color="var(--primary)" />
                 <div>
@@ -1587,9 +1598,9 @@ export const Admin = ({ initialTab }) => {
         {/* TAB 6: STAFF & ACCESS CONTROL */}
         {activeTab === 'staff' && (
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+            <div className="admin-page-header admin-page-header-flex">
               <div>
-                <h1 style={{ fontSize: '1.8rem', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                <h1 style={{ fontSize: '1.8rem', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.25rem' }}>
                   <ShieldCheck size={26} color="var(--primary)" /> Staff &amp; Access Control
                 </h1>
                 <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
@@ -1605,10 +1616,10 @@ export const Admin = ({ initialTab }) => {
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+            <div className="admin-staff-grid">
               
               {/* Card 1: Master Admin Credentials */}
-              <div style={{ backgroundColor: '#FFFFFF', borderRadius: 'var(--radius-lg)', padding: '1.75rem', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)' }}>
+              <div className="admin-card">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1.25rem', paddingBottom: '0.75rem', borderBottom: '1px solid var(--border-light)' }}>
                   <div style={{ width: '38px', height: '38px', borderRadius: 'var(--radius-sm)', backgroundColor: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Key size={20} />
@@ -1693,7 +1704,7 @@ export const Admin = ({ initialTab }) => {
               </div>
 
               {/* Card 2: Provision New Staff Member */}
-              <div style={{ backgroundColor: '#FFFFFF', borderRadius: 'var(--radius-lg)', padding: '1.75rem', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)' }}>
+              <div className="admin-card">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1.25rem', paddingBottom: '0.75rem', borderBottom: '1px solid var(--border-light)' }}>
                   <div style={{ width: '38px', height: '38px', borderRadius: 'var(--radius-sm)', backgroundColor: 'var(--gold-light)', color: 'var(--gold)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <UserPlus size={20} />
@@ -1788,7 +1799,7 @@ export const Admin = ({ initialTab }) => {
             </div>
 
             {/* Active Staff List Table */}
-            <div style={{ backgroundColor: '#FFFFFF', borderRadius: 'var(--radius-lg)', padding: '1.75rem', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)' }}>
+            <div className="admin-card">
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', paddingBottom: '0.75rem', borderBottom: '1px solid var(--border-light)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                   <Users size={20} color="var(--primary)" />
@@ -1959,7 +1970,7 @@ export const Admin = ({ initialTab }) => {
                   />
                 </div>
               </div>
-              <div className="modal-footer">
+              <div className="modal-footer admin-modal-footer">
                 <button type="button" onClick={() => setRoomModalOpen(false)} className="btn btn-secondary">
                   Cancel
                 </button>
