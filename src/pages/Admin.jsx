@@ -137,7 +137,7 @@ export const Admin = ({ initialTab }) => {
     description: ''
   });
 
-  const reloadData = () => {
+  const reloadData = (preservePricingForm = (activeTab === 'pricing')) => {
     StorageService.init();
     setStats(StorageService.getDashboardStats());
     setBookings(StorageService.getBookings());
@@ -146,7 +146,9 @@ export const Admin = ({ initialTab }) => {
     setCustomers(StorageService.getCustomers());
     const pConfig = StorageService.getPricingConfig();
     setPricingConfig(pConfig);
-    setPricingForm(pConfig);
+    if (!preservePricingForm) {
+      setPricingForm(pConfig);
+    }
     const aConfig = StorageService.getAdminConfig();
     setAdminConfig(aConfig);
     setAdminEmailForm({
@@ -177,8 +179,8 @@ export const Admin = ({ initialTab }) => {
   };
 
   useEffect(() => {
-    reloadData();
-    const handleSync = () => reloadData();
+    reloadData(activeTab === 'pricing');
+    const handleSync = () => reloadData(activeTab === 'pricing');
     window.addEventListener('syn_pricing_updated', handleSync);
     window.addEventListener('syn_rooms_updated', handleSync);
     window.addEventListener('syn_bookings_updated', handleSync);
@@ -193,7 +195,7 @@ export const Admin = ({ initialTab }) => {
       window.removeEventListener('syn_staff_updated', handleSync);
       window.removeEventListener('syn_admin_config_updated', handleSync);
     };
-  }, [isAdminLoggedIn]);
+  }, [isAdminLoggedIn, activeTab]);
 
   const handleSavePricing = async (e) => {
     e.preventDefault();
@@ -201,12 +203,15 @@ export const Admin = ({ initialTab }) => {
     const acRate = Number(pricingForm.base_rates?.AC);
     const nonAcRate = Number(pricingForm.base_rates?.["Non-AC"]);
     const extraRate = Number(pricingForm.extra_person_rate);
+    const childRate = pricingForm.child_rate !== undefined && pricingForm.child_rate !== '' 
+      ? Number(pricingForm.child_rate) 
+      : extraRate;
     const childLimit = Number(pricingForm.child_age_free_limit);
     const acQty = Number(pricingForm.inventory?.AC?.total_rooms);
     const nonAcQty = Number(pricingForm.inventory?.["Non-AC"]?.total_rooms);
 
-    if (isNaN(acRate) || acRate < 0 || isNaN(nonAcRate) || nonAcRate < 0 || isNaN(extraRate) || extraRate < 0) {
-      showError("Price must be greater than or equal to 0");
+    if (isNaN(acRate) || acRate < 0 || isNaN(nonAcRate) || nonAcRate < 0 || isNaN(extraRate) || extraRate < 0 || isNaN(childRate) || childRate < 0) {
+      showError("Please enter valid prices greater than or equal to 0");
       return;
     }
     if (isNaN(childLimit) || childLimit < 0) {
@@ -218,11 +223,32 @@ export const Admin = ({ initialTab }) => {
       return;
     }
 
+    const cleanConfig = {
+      ...pricingConfig,
+      base_rates: {
+        AC: acRate,
+        "Non-AC": nonAcRate
+      },
+      extra_person_rate: extraRate,
+      child_rate: childRate,
+      child_age_free_limit: childLimit,
+      inventory: {
+        AC: {
+          total_rooms: acQty,
+          active: pricingForm.inventory?.AC?.active !== false
+        },
+        "Non-AC": {
+          total_rooms: nonAcQty,
+          active: pricingForm.inventory?.["Non-AC"]?.active !== false
+        }
+      }
+    };
+
     setIsSavingPricing(true);
     try {
-      await PricingService.savePricingConfig(pricingForm, 'Admin');
+      await PricingService.savePricingConfig(cleanConfig, 'Admin');
       showSuccess('Pricing and inventory configuration saved successfully! Rates and inventory are instantly synced.');
-      reloadData();
+      reloadData(false);
     } catch (err) {
       showError(err.message || 'Failed to update pricing settings.');
     } finally {
@@ -1123,10 +1149,10 @@ export const Admin = ({ initialTab }) => {
                         step="50"
                         required
                         className="form-control"
-                        value={pricingForm.base_rates?.AC || 2400}
+                        value={pricingForm.base_rates?.AC !== undefined ? pricingForm.base_rates.AC : ''}
                         onChange={(e) => setPricingForm({
                           ...pricingForm,
-                          base_rates: { ...pricingForm.base_rates, AC: parseFloat(e.target.value) || 0 }
+                          base_rates: { ...pricingForm.base_rates, AC: e.target.value }
                         })}
                       />
                     </div>
@@ -1142,10 +1168,10 @@ export const Admin = ({ initialTab }) => {
                         step="50"
                         required
                         className="form-control"
-                        value={pricingForm.base_rates?.["Non-AC"] || 1400}
+                        value={pricingForm.base_rates?.["Non-AC"] !== undefined ? pricingForm.base_rates["Non-AC"] : ''}
                         onChange={(e) => setPricingForm({
                           ...pricingForm,
-                          base_rates: { ...pricingForm.base_rates, "Non-AC": parseFloat(e.target.value) || 0 }
+                          base_rates: { ...pricingForm.base_rates, "Non-AC": e.target.value }
                         })}
                       />
                     </div>
@@ -1176,10 +1202,10 @@ export const Admin = ({ initialTab }) => {
                         step="50"
                         required
                         className="form-control"
-                        value={pricingForm.extra_person_rate || 700}
+                        value={pricingForm.extra_person_rate !== undefined ? pricingForm.extra_person_rate : ''}
                         onChange={(e) => setPricingForm({
                           ...pricingForm,
-                          extra_person_rate: parseFloat(e.target.value) || 0
+                          extra_person_rate: e.target.value
                         })}
                       />
                     </div>
@@ -1195,10 +1221,10 @@ export const Admin = ({ initialTab }) => {
                         step="50"
                         required
                         className="form-control"
-                        value={pricingForm.child_rate ?? pricingForm.extra_person_rate ?? 700}
+                        value={pricingForm.child_rate !== undefined ? pricingForm.child_rate : (pricingForm.extra_person_rate ?? '')}
                         onChange={(e) => setPricingForm({
                           ...pricingForm,
-                          child_rate: parseFloat(e.target.value) || 0
+                          child_rate: e.target.value
                         })}
                       />
                     </div>
@@ -1214,10 +1240,10 @@ export const Admin = ({ initialTab }) => {
                         max="12"
                         required
                         className="form-control"
-                        value={pricingForm.child_age_free_limit ?? 4}
+                        value={pricingForm.child_age_free_limit !== undefined ? pricingForm.child_age_free_limit : ''}
                         onChange={(e) => setPricingForm({
                           ...pricingForm,
-                          child_age_free_limit: parseInt(e.target.value, 10) || 0
+                          child_age_free_limit: e.target.value
                         })}
                       />
                     </div>
@@ -1225,7 +1251,7 @@ export const Admin = ({ initialTab }) => {
 
                   <div style={{ marginTop: '1rem', padding: '0.75rem', backgroundColor: 'var(--bg-primary)', borderRadius: 'var(--radius-sm)', fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <Info size={15} color="var(--primary)" style={{ flexShrink: 0 }} />
-                    <span>Max room occupancy is <strong>4 persons</strong>. Children aged 0–{pricingForm.child_age_free_limit} stay free.</span>
+                    <span>Max room occupancy is <strong>4 persons</strong>. Children aged 0–{pricingForm.child_age_free_limit ?? 4} stay free.</span>
                   </div>
                 </div>
 
@@ -1252,14 +1278,14 @@ export const Admin = ({ initialTab }) => {
                           max="20"
                           required
                           className="form-control"
-                          value={pricingForm.inventory?.AC?.total_rooms ?? 3}
+                          value={pricingForm.inventory?.AC?.total_rooms !== undefined ? pricingForm.inventory.AC.total_rooms : ''}
                           onChange={(e) => setPricingForm({
                             ...pricingForm,
                             inventory: {
                               ...pricingForm.inventory,
                               AC: {
                                 ...pricingForm.inventory?.AC,
-                                total_rooms: parseInt(e.target.value, 10) || 0
+                                total_rooms: e.target.value
                               }
                             }
                           })}
@@ -1302,14 +1328,14 @@ export const Admin = ({ initialTab }) => {
                           max="20"
                           required
                           className="form-control"
-                          value={pricingForm.inventory?.["Non-AC"]?.total_rooms ?? 2}
+                          value={pricingForm.inventory?.["Non-AC"]?.total_rooms !== undefined ? pricingForm.inventory["Non-AC"].total_rooms : ''}
                           onChange={(e) => setPricingForm({
                             ...pricingForm,
                             inventory: {
                               ...pricingForm.inventory,
                               "Non-AC": {
                                 ...pricingForm.inventory?.["Non-AC"],
-                                total_rooms: parseInt(e.target.value, 10) || 0
+                                total_rooms: e.target.value
                               }
                             }
                           })}
@@ -1346,7 +1372,7 @@ export const Admin = ({ initialTab }) => {
                   <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.65rem 0.85rem', backgroundColor: 'var(--bg-primary)', borderRadius: 'var(--radius-sm)', fontSize: '0.82rem' }}>
                     <span style={{ fontWeight: 600 }}>Total Property Inventory:</span>
                     <strong style={{ color: 'var(--primary)', fontSize: '1rem' }}>
-                      {(pricingForm.inventory?.AC?.total_rooms || 0) + (pricingForm.inventory?.["Non-AC"]?.total_rooms || 0)} Rooms
+                      {(Number(pricingForm.inventory?.AC?.total_rooms) || 0) + (Number(pricingForm.inventory?.["Non-AC"]?.total_rooms) || 0)} Rooms
                     </strong>
                   </div>
                 </div>
