@@ -917,7 +917,7 @@ export const StorageService = {
       email: emailClean,
       mobile: data.mobile.trim(),
       password: data.password.trim(),
-      city: data.city ? data.city.trim() : "Pandharpur Devotee",
+      city: data.city ? data.city.trim() : "Kolhapur Guest",
       role: "user",
       created_at: new Date().toISOString()
     };

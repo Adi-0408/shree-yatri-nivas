@@ -494,7 +494,7 @@ export const Admin = ({ initialTab }) => {
               Staff &amp; Admin Portal
             </h1>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-              Shree Yatri Nivas Management &amp; Access Control
+              HOTEL VIHANN INN Management &amp; Access Control
             </p>
           </div>
 
@@ -887,7 +887,7 @@ export const Admin = ({ initialTab }) => {
                       <td>
                         <button
                           onClick={() => {
-                            const text = `SHREE YATRI NIVAS: Booking ${b.booking_reference} for ${b.guest_name}. Room: ${b.room_name}. Dates: ${b.check_in} to ${b.check_out}. Payable: Rs.${b.total_amount}.`;
+                            const text = `HOTEL VIHANN INN: Booking ${b.booking_reference} for ${b.guest_name}. Room: ${b.room_name}. Dates: ${b.check_in} to ${b.check_out}. Payable: Rs.${b.total_amount}.`;
                             navigator.clipboard.writeText(text);
                             showSuccess('Booking summary copied to clipboard!');
                           }}
@@ -1736,7 +1736,7 @@ export const Admin = ({ initialTab }) => {
                       className="form-control"
                       value={newStaffForm.email}
                       onChange={(e) => setNewStaffForm({ ...newStaffForm, email: e.target.value })}
-                      placeholder="e.g. ramesh@shreeyatrinivas.in"
+                      placeholder="e.g. ramesh@hotelvihanninn.in"
                     />
                   </div>
 

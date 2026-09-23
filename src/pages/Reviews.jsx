@@ -42,7 +42,7 @@ export const Reviews = () => {
 
     StorageService.addReview({
       guest_name: name.trim(),
-      city: city.trim() || 'Pandharpur Devotee',
+      city: city.trim() || 'Kolhapur Guest',
       room_type: roomType,
       rating: parseFloat(rating),
       comment: comment.trim()
@@ -71,7 +71,7 @@ export const Reviews = () => {
             Devotee Experiences & Reviews
           </h1>
           <p style={{ color: '#D6CEC5', maxWidth: '640px', margin: '0 auto', fontSize: '1.05rem' }}>
-            Read real feedback from pilgrims and visiting families who chose Shree Yatri Nivas during their sacred Pandharpur pilgrimage.
+            Read real feedback from guests and visiting families who chose HOTEL VIHANN INN during their stay in Kolhapur.
           </p>
         </div>
       </section>
@@ -158,7 +158,7 @@ export const Reviews = () => {
                     <Sparkles size={32} color="var(--gold)" style={{ margin: '0 auto 0.75rem', display: 'block' }} />
                     <h3 style={{ fontSize: '1.2rem', color: 'var(--text-main)', marginBottom: '0.5rem' }}>No reviews yet</h3>
                     <p style={{ fontSize: '0.9rem', maxWidth: '420px', margin: '0 auto' }}>
-                      Be the first devotee or visiting family to share your experience staying at Shree Yatri Nivas using the form.
+                      Be the first guest or visiting family to share your experience staying at HOTEL VIHANN INN using the form.
                     </p>
                   </div>
                 )}

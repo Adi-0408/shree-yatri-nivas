@@ -68,7 +68,7 @@ export const AuthModal = () => {
             <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
               {authModalTab === 'login'
                 ? 'Sign in to access your bookings or Administrator dashboard'
-                : 'Join Shree Yatri Nivas devotee community'}
+                : 'Join HOTEL VIHANN INN guest community'}
             </p>
           </div>
           <button onClick={closeAuthModal} style={{ padding: '0.4rem', color: 'var(--text-muted)' }}>
@@ -268,7 +268,7 @@ export const AuthModal = () => {
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g. Pandharpur / Pune"
+                    placeholder="e.g. Kolhapur / Pune"
                     className="form-control"
                     value={regCity}
                     onChange={(e) => setRegCity(e.target.value)}

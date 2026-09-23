@@ -16,7 +16,7 @@ export const NotFound = () => {
           Page Not Found
         </h1>
         <p style={{ color: 'var(--text-secondary)', fontSize: '1rem', lineHeight: 1.6, marginBottom: '2rem' }}>
-          The holy page you are seeking might have been moved or does not exist. Let's guide you back to Shree Yatri Nivas sanctuary.
+          The page you are seeking might have been moved or does not exist. Let's guide you back to HOTEL VIHANN INN.
         </p>
         <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
           <Link to="/" className="btn btn-primary">

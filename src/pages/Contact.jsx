@@ -46,24 +46,28 @@ export const Contact = () => {
 
   const faqs = [
     {
-      q: "How close is Shree Yatri Nivas to the main Vitthal-Rukmini Temple?",
-      a: "Shree Yatri Nivas is conveniently located just 400 meters (a comfortable 5-7 minute walking distance) from the central temple gate and darshan line entry."
+      q: "How close is HOTEL VIHANN INN to the main Mahalaxmi Temple and transit points?",
+      a: "HOTEL VIHANN INN is prime-located on Kolhapur-Rukadi-Sangli Hwy in Tarabai Park: just 4 km from the sacred Mahalaxmi Temple, 1 km from the Railway Station, 800m from S.T. Bus Stand, and 7 km from the Airport."
     },
     {
       q: "What are your check-in and check-out timings?",
-      a: "Standard Check-in is at 12:00 PM and Check-out is at 11:00 AM. Early check-in or late luggage storage can be accommodated based on room readiness upon arrival."
+      a: `Standard Check-in is at ${PROPERTY_INFO.check_in_time} (3:00 PM) and Check-out is at ${PROPERTY_INFO.check_out_time} (10:00 AM). Please contact the front desk if you require special arrangements.`
     },
     {
-      q: "Is hot water available for early morning holy bath?",
-      a: "Yes! We provide 24/7 round-the-clock solar and electric geyser hot water in all rooms for early morning snan and temple visits."
+      q: "Are local IDs and unmarried couples allowed?",
+      a: "Yes, local IDs are allowed at HOTEL VIHANN INN. Government IDs are not mandatory, making check-in smooth and welcoming."
     },
     {
-      q: "Is vehicle parking available at the property?",
-      a: "Yes, we have dedicated, secure CCTV-monitored vehicle parking for devotees traveling by private car, tempo, or bus."
+      q: "Are pets and smoking permitted on the property?",
+      a: "No, pets are not allowed and smoking is strictly prohibited inside the hotel premises to maintain supreme cleanliness and hygiene."
     },
     {
-      q: "What is your cancellation and booking policy?",
-      a: "Reservations are confirmed with zero advance payment ('Pay at Property'). Please notify our desk at least 24 hours prior if your travel plans change."
+      q: "What is your policy regarding outside food and visitors?",
+      a: "For guest safety and cleanliness standards, outside food & beverages are not allowed, and outside visitors are not permitted in guest rooms."
+    },
+    {
+      q: "What is your child stay policy?",
+      a: "Children aged 0 to 4 years stay free of charge. Children aged 5 to 17 years are chargeable as extra guests per property policy."
     }
   ];
 
@@ -76,10 +80,10 @@ export const Contact = () => {
             Directions & Front Desk
           </span>
           <h1 style={{ fontSize: '2.5rem', color: '#FFFFFF', marginBottom: '0.75rem' }}>
-            Contact Shree Yatri Nivas
+            Contact {PROPERTY_INFO.name}
           </h1>
           <p style={{ color: '#D6CEC5', maxWidth: '640px', margin: '0 auto', fontSize: '1.05rem' }}>
-            Have questions about room availability, pilgrimage guidance, or directions? Our 24/7 reception desk is always ready to assist you.
+            Have questions about room availability, Kolhapur sightseeing, or directions? Our 24/7 reception desk is always ready to assist you.
           </p>
         </div>
       </section>
@@ -109,7 +113,7 @@ export const Contact = () => {
               <h3 style={{ fontSize: '1.1rem', marginBottom: '0.35rem' }}>WhatsApp Concierge</h3>
               <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Instant Chat & Directions</div>
               <a
-                href={`https://wa.me/${PROPERTY_INFO.whatsapp}?text=${encodeURIComponent('Namaste Shree Yatri Nivas! I would like to inquire about lodging.')}`}
+                href={`https://wa.me/${PROPERTY_INFO.whatsapp}?text=${encodeURIComponent(`Namaste ${PROPERTY_INFO.name}! I would like to inquire about lodging.`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{ color: 'var(--success)', fontWeight: 700, fontSize: '1.05rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
@@ -219,14 +223,14 @@ export const Contact = () => {
                   {PROPERTY_INFO.address}
                 </p>
                 <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                  Landmarks: 400m from Central Temple Gate • 1 km from Pandharpur Railway Station • 800m from ST Bus Stand.
+                  <strong>Key Distances:</strong> Mahalaxmi Temple (4 km) • Airport (7 km) • Railway Station (1 km) • S.T. Stand (800 M)
                 </div>
               </div>
 
               {/* Embedded Map */}
               <div style={{ flex: 1, minHeight: '260px', borderRadius: 'var(--radius-lg)', overflow: 'hidden', border: '1px solid var(--border-light)' }}>
                 <iframe
-                  title="Shree Yatri Nivas Location Map"
+                  title="HOTEL VIHANN INN Location Map"
                   src={PROPERTY_INFO.google_maps_url}
                   width="100%"
                   height="100%"
@@ -235,6 +239,49 @@ export const Contact = () => {
                   loading="lazy"
                   referrerPolicy="no-referrer-when-downgrade"
                 />
+              </div>
+            </div>
+          </div>
+
+          {/* Property Rules Section */}
+          <div style={{ maxWidth: '640px', margin: '0 auto 4rem' }}>
+            <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+              <span className="badge badge-gold" style={{ marginBottom: '0.5rem' }}>House Policies</span>
+              <h2 style={{ fontSize: '1.8rem', color: 'var(--text-main)' }}>Property Rule</h2>
+            </div>
+            <div style={{
+              backgroundColor: '#F7EDC7',
+              borderRadius: '16px',
+              padding: '2rem 2.25rem',
+              border: '2.5px solid #C49BDF',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.06)'
+            }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.95rem' }}>
+                {[
+                  "Check In Time 3:00 pm",
+                  "Check Out Time 10:00 am",
+                  "Pets Are Not Allowed",
+                  "Smoking Not Allowed",
+                  "Govt. Id(s) Not Mandatory",
+                  "Local Id(s) Allowed",
+                  "Visitors Are Not Allowed",
+                  "Outside Food And Beverage Not Allowed",
+                  "Children Aged 0 to 4 Years Stay Free Of Charge",
+                  "Children Aged 5 to 17 Years are Chargeable"
+                ].map((ruleText, idx) => (
+                  <div key={idx} style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.75rem',
+                    fontSize: '1.05rem',
+                    fontWeight: 700,
+                    color: '#6E1B00',
+                    lineHeight: 1.35
+                  }}>
+                    <span style={{ fontSize: '1.2rem', color: '#6E1B00', fontWeight: 900 }}>✔</span>
+                    <span>{ruleText}</span>
+                  </div>
+                ))}
               </div>
             </div>
           </div>

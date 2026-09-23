@@ -33,8 +33,8 @@ export const Navbar = () => {
             <Building size={24} />
           </div>
           <div>
-            <div className="syn-brand-title">SHREE YATRI NIVAS</div>
-            <div className="syn-brand-subtitle">Pandharpur Pilgrimage Lodging</div>
+            <div className="syn-brand-title">HOTEL VIHANN INN</div>
+            <div className="syn-brand-subtitle">Tarabai Park, Kolhapur</div>
           </div>
         </Link>
 

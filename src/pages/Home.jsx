@@ -20,7 +20,13 @@ import {
   ArrowRight,
   ChevronRight,
   Flame,
-  Car
+  Car,
+  Plane,
+  Train,
+  Bus,
+  Navigation,
+  FileText,
+  Check
 } from 'lucide-react';
 
 export const Home = () => {
@@ -64,13 +70,13 @@ export const Home = () => {
         <div className="hero-pattern" />
         <div className="syn-container hero-content">
           <div className="hero-subtitle-tag">
-            <Sparkles size={16} /> Sacred Pilgrimage Sanctuary • Pandharpur
+            <Sparkles size={16} /> Premium Comfort & Hospitality • Tarabai Park, Kolhapur
           </div>
           <h1 className="hero-title">
-            Divine Comfort & Peace at <span>Shree Yatri Nivas</span>
+            Divine Comfort & Peace at <span>HOTEL VIHANN INN</span>
           </h1>
           <p className="hero-lead">
-            Experience serene, hygienic, and affordable lodging just 400 meters from the Holy Temple. Enjoy 24/7 solar hot water, purified drinking water, and warm devotee hospitality.
+            Experience serene, comfortable, and affordable lodging in Tarabai Park, Kolhapur. Just 4 km from Mahalaxmi Temple, 1 km from Railway Station, and 800m from S.T. Stand.
           </p>
 
           {/* Quick Search Widget */}
@@ -149,8 +155,8 @@ export const Home = () => {
       <section style={{ padding: '4.5rem 0', backgroundColor: '#FFFFFF', borderBottom: '1px solid var(--border-light)' }}>
         <div className="syn-container">
           <div style={{ textAlign: 'center', maxWidth: '680px', margin: '0 auto 3rem' }}>
-            <span className="badge badge-gold" style={{ marginBottom: '0.75rem' }}>Why Choose Shree Yatri Nivas</span>
-            <h2 style={{ fontSize: '2.2rem', color: 'var(--text-main)' }}>Your Peaceful Haven During Pilgrimage</h2>
+            <span className="badge badge-gold" style={{ marginBottom: '0.75rem' }}>Why Choose HOTEL VIHANN INN</span>
+            <h2 style={{ fontSize: '2.2rem', color: 'var(--text-main)' }}>Your Peaceful Haven in Kolhapur</h2>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '2rem' }}>
@@ -158,9 +164,9 @@ export const Home = () => {
               <div className="highlight-icon" style={{ width: '50px', height: '50px', borderRadius: 'var(--radius-md)', backgroundColor: 'var(--primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.25rem' }}>
                 <MapPin size={24} color="var(--primary)" />
               </div>
-              <h3 style={{ fontSize: '1.2rem', marginBottom: '0.5rem' }}>400m from Temple</h3>
+              <h3 style={{ fontSize: '1.2rem', marginBottom: '0.5rem' }}>Prime Tarabai Park</h3>
               <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                Located right near the central temple gate and railway station for effortless darshan and hassle-free transit.
+                Located on Kolhapur-Rukadi-Sangli Hwy, just 4 km from Mahalaxmi Temple, 1 km from Railway Station & 800m from S.T. Stand.
               </p>
             </div>
 
@@ -224,7 +230,166 @@ export const Home = () => {
         </div>
       </section>
 
-      {/* Pilgrimage Trust Banner */}
+      {/* Prime Location & Nearby Key Places Section */}
+      <section style={{ padding: '4.5rem 0', backgroundColor: '#FFFFFF', borderTop: '1px solid var(--border-light)' }}>
+        <div className="syn-container">
+          <div style={{ textAlign: 'center', maxWidth: '680px', margin: '0 auto 3rem' }}>
+            <span className="badge badge-gold" style={{ marginBottom: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+              <Navigation size={14} /> Prime Central Location
+            </span>
+            <h2 style={{ fontSize: '2.2rem', color: 'var(--text-main)', marginBottom: '0.75rem' }}>
+              Proximity to Key Destinations
+            </h2>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.98rem', lineHeight: 1.6 }}>
+              HOTEL VIHANN INN is conveniently located on <strong>Kolhapur-Rukadi-Sangli Hwy, Tarabai Park</strong>, with effortless, quick connectivity to Kolhapur’s principal temple, flight, rail, and bus terminals.
+            </p>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem', marginBottom: '2.5rem' }}>
+            {/* 1. Mahalaxmi Temple */}
+            <div className="landmark-card" style={{ padding: '1.75rem', borderRadius: 'var(--radius-lg)', backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem' }}>
+                <div style={{ width: '48px', height: '48px', borderRadius: 'var(--radius-md)', backgroundColor: '#FEF3C7', color: '#B45309', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Building size={24} />
+                </div>
+                <span className="badge badge-gold" style={{ fontSize: '0.85rem', fontWeight: 800, padding: '4px 10px' }}>
+                  4 km
+                </span>
+              </div>
+              <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.35rem' }}>
+                Mahalaxmi Temple
+              </h3>
+              <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: '1rem', flex: 1 }}>
+                World-renowned historic Shri Ambabai / Mahalaxmi Temple. Swift drive (~10-12 mins) for peaceful morning and evening darshan.
+              </p>
+              <div style={{ fontSize: '0.78rem', color: 'var(--primary)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <MapPin size={13} /> Sacred Temple • 4 km
+              </div>
+            </div>
+
+            {/* 2. Airport */}
+            <div className="landmark-card" style={{ padding: '1.75rem', borderRadius: 'var(--radius-lg)', backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem' }}>
+                <div style={{ width: '48px', height: '48px', borderRadius: 'var(--radius-md)', backgroundColor: '#EFF6FF', color: '#1D4ED8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Plane size={24} />
+                </div>
+                <span className="badge badge-primary" style={{ fontSize: '0.85rem', fontWeight: 800, padding: '4px 10px', backgroundColor: '#DBEAFE', color: '#1E40AF', borderColor: '#BFDBFE' }}>
+                  7 km
+                </span>
+              </div>
+              <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.35rem' }}>
+                Airport
+              </h3>
+              <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: '1rem', flex: 1 }}>
+                Kolhapur Airport (KLH - Chhatrapati Rajaram Maharaj Airport). Direct highway transit (~15-20 mins).
+              </p>
+              <div style={{ fontSize: '0.78rem', color: '#1D4ED8', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <MapPin size={13} /> Domestic Airport • 7 km
+              </div>
+            </div>
+
+            {/* 3. Railway Station */}
+            <div className="landmark-card" style={{ padding: '1.75rem', borderRadius: 'var(--radius-lg)', backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem' }}>
+                <div style={{ width: '48px', height: '48px', borderRadius: 'var(--radius-md)', backgroundColor: '#ECFDF5', color: '#047857', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Train size={24} />
+                </div>
+                <span className="badge badge-success" style={{ fontSize: '0.85rem', fontWeight: 800, padding: '4px 10px' }}>
+                  1 km
+                </span>
+              </div>
+              <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.35rem' }}>
+                Railway Station
+              </h3>
+              <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: '1rem', flex: 1 }}>
+                Chhatrapati Shahu Maharaj Terminus (Kolhapur Central Railway Station). Quick 3-5 minute drive or easy commute.
+              </p>
+              <div style={{ fontSize: '0.78rem', color: '#047857', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <MapPin size={13} /> Main Train Station • 1 km
+              </div>
+            </div>
+
+            {/* 4. S.T. Stand */}
+            <div className="landmark-card" style={{ padding: '1.75rem', borderRadius: 'var(--radius-lg)', backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem' }}>
+                <div style={{ width: '48px', height: '48px', borderRadius: 'var(--radius-md)', backgroundColor: '#FDF2F8', color: '#BE185D', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Bus size={24} />
+                </div>
+                <span className="badge badge-gold" style={{ fontSize: '0.85rem', fontWeight: 800, padding: '4px 10px', backgroundColor: '#FCE7F3', color: '#9D174D', borderColor: '#FBCFE8' }}>
+                  800 M
+                </span>
+              </div>
+              <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.35rem' }}>
+                S.T. Stand
+              </h3>
+              <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: '1rem', flex: 1 }}>
+                Kolhapur Central Bus Stand (CBS / S.T. Stand). Under 2-3 minutes away for effortless intercity bus transit.
+              </p>
+              <div style={{ fontSize: '0.78rem', color: '#BE185D', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <MapPin size={13} /> Central Bus Terminal • 800 M
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Property Rules Section (Matching User Specification) */}
+      <section style={{ padding: '4.5rem 0', backgroundColor: '#FDFBF7', borderTop: '1px solid var(--border-light)' }}>
+        <div className="syn-container">
+          <div style={{ textAlign: 'center', maxWidth: '640px', margin: '0 auto 2.5rem' }}>
+            <span className="badge badge-gold" style={{ marginBottom: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+              <FileText size={14} /> House Guidelines
+            </span>
+            <h2 style={{ fontSize: '2.2rem', color: 'var(--text-main)', marginBottom: '0.5rem' }}>
+              Property Rule
+            </h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem' }}>
+              Important house policies and stay regulations for all guests staying at HOTEL VIHANN INN.
+            </p>
+          </div>
+
+          {/* Centered Rule Card - Styled authentic to user request */}
+          <div style={{ maxWidth: '580px', margin: '0 auto' }}>
+            <div style={{
+              backgroundColor: '#F7EDC7',
+              borderRadius: '16px',
+              padding: '2rem 2.25rem',
+              border: '2.5px solid #C49BDF',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.06)'
+            }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.95rem' }}>
+                {[
+                  "Check In Time 3:00 pm",
+                  "Check Out Time 10:00 am",
+                  "Pets Are Not Allowed",
+                  "Smoking Not Allowed",
+                  "Govt. Id(s) Not Mandatory",
+                  "Local Id(s) Allowed",
+                  "Visitors Are Not Allowed",
+                  "Outside Food And Beverage Not Allowed",
+                  "Children Aged 0 to 4 Years Stay Free Of Charge",
+                  "Children Aged 5 to 17 Years are Chargeable"
+                ].map((ruleText, idx) => (
+                  <div key={idx} style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.75rem',
+                    fontSize: '1.1rem',
+                    fontWeight: 700,
+                    color: '#6E1B00',
+                    lineHeight: 1.35
+                  }}>
+                    <span style={{ fontSize: '1.25rem', color: '#6E1B00', fontWeight: 900 }}>✔</span>
+                    <span>{ruleText}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Hospitality Trust Banner */}
       <section style={{ padding: '4.5rem 0', background: 'linear-gradient(135deg, #8E3200 0%, #6E2600 100%)', color: '#FFFFFF' }}>
         <div className="syn-container">
           <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '3rem', alignItems: 'center' }}>
@@ -236,7 +401,7 @@ export const Home = () => {
                 Peace of Mind for You and Your Family
               </h2>
               <p style={{ fontSize: '1.05rem', color: '#F8D8A0', lineHeight: 1.6, marginBottom: '2rem' }}>
-                We understand the spiritual importance of your pilgrimage. At Shree Yatri Nivas, we take pride in offering warm, honest, and reliable hospitality so you can focus entirely on prayer and serenity.
+                We understand the importance of your visit to Kolhapur. At HOTEL VIHANN INN, we take pride in offering warm, honest, and reliable hospitality so you can focus entirely on comfort and relaxation.
               </p>
               <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                 <Link to="/booking" className="btn btn-gold btn-lg">
@@ -260,7 +425,7 @@ export const Home = () => {
                 </div>
                 <div style={{ height: '1px', backgroundColor: 'rgba(255,255,255,0.15)' }} />
                 <div style={{ fontSize: '0.9rem', lineHeight: 1.6, color: '#FFFFFF', fontStyle: 'italic' }}>
-                  "Clean rooms, immediate hot water, and extremely respectful staff. Shree Yatri Nivas made our Pandharpur yatra comfortable and memorable."
+                  "Clean rooms, immediate hot water, and extremely respectful staff. HOTEL VIHANN INN made our Kolhapur visit comfortable and memorable."
                 </div>
                 <div style={{ fontSize: '0.8rem', color: '#F8D8A0', fontWeight: 600 }}>— Rajesh Kulkarni, Pune</div>
               </div>

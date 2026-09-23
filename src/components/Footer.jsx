@@ -24,11 +24,11 @@ export const Footer = () => {
                 <Building size={20} />
               </div>
               <span style={{ fontFamily: 'var(--font-heading)', fontSize: '1.25rem', fontWeight: 800, color: '#FFFFFF' }}>
-                SHREE YATRI NIVAS
+                {PROPERTY_INFO.name}
               </span>
             </div>
             <p style={{ fontSize: '0.9rem', color: '#B3AAA0', lineHeight: 1.6, marginBottom: '1.5rem' }}>
-              Your sacred sanctuary in Pandharpur. Dedicated to providing pilgrims and traveling families with pristine cleanliness, authentic hospitality, modern amenities, and peace of mind.
+              Your comfortable haven in Kolhapur. Dedicated to providing travelers, devotees, and families with pristine cleanliness, authentic hospitality, modern amenities, and peace of mind.
             </p>
             <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
               <span className="badge badge-gold" style={{ fontSize: '0.7rem' }}>

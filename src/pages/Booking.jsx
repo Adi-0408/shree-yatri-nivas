@@ -253,8 +253,8 @@ export const Booking = () => {
         customer_name: customer?.name || guestName.trim(),
         guest_name: guestName.trim(),
         mobile: mobile.trim(),
-        email: email.trim() || `${mobile.trim()}@guest.shreeyatrinivas.com`,
-        city: city.trim() || 'Pandharpur Devotee',
+        email: email.trim() || `${mobile.trim()}@guest.hotelvihanninn.com`,
+        city: city.trim() || 'Kolhapur Guest',
         check_in: checkIn,
         check_out: checkOut,
         adults: priceBreakdown.adults,
@@ -295,12 +295,12 @@ export const Booking = () => {
   };
 
   const handleWhatsAppShare = (b) => {
-    const text = `*SHREE YATRI NIVAS - Booking Voucher*\n\n` +
+    const text = `*${PROPERTY_INFO.name} - Booking Voucher*\n\n` +
       `*Reference:* ${b.booking_reference}\n` +
       `*Guest Name:* ${b.guest_name}\n` +
       `*Room:* ${b.room_name} (${b.room_quantity} Room)\n` +
-      `*Check-in:* ${b.check_in} (12:00 PM)\n` +
-      `*Check-out:* ${b.check_out} (11:00 AM)\n` +
+      `*Check-in:* ${b.check_in} (${PROPERTY_INFO.check_in_time})\n` +
+      `*Check-out:* ${b.check_out} (${PROPERTY_INFO.check_out_time})\n` +
       `*Total Nights:* ${b.number_of_nights}\n` +
       `*Total Payable:* ₹${(b.total_amount || 0).toLocaleString('en-IN')} (Pay at Property)\n\n` +
       `*Property Address:* ${PROPERTY_INFO.address}\n` +
@@ -1075,7 +1075,7 @@ export const Booking = () => {
                     Reservation Confirmed!
                   </h2>
                   <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
-                    Thank you, {confirmedBooking.guest_name}. Your room has been reserved at Shree Yatri Nivas.
+                    Thank you, {confirmedBooking.guest_name}. Your room has been reserved at {PROPERTY_INFO.name}.
                   </p>
                   <div style={{ marginTop: '0.75rem' }}>
                     <span className="badge badge-gold" style={{ fontSize: '0.9rem', padding: '0.4rem 1rem' }}>

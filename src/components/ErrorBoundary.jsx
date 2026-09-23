@@ -11,7 +11,7 @@ export class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    console.error('Shree Yatri Nivas - Uncaught UI Error:', error, errorInfo);
+    console.error('HOTEL VIHANN INN - Uncaught UI Error:', error, errorInfo);
   }
 
   handleReset = () => {
@@ -62,7 +62,7 @@ export class ErrorBoundary extends React.Component {
               marginBottom: '0.6rem',
               fontFamily: "'Cinzel', serif"
             }}>
-              Shree Yatri Nivas
+              HOTEL VIHANN INN
             </h2>
 
             <p style={{ color: '#4A5568', fontSize: '0.95rem', lineHeight: 1.6, marginBottom: '1.5rem' }}>

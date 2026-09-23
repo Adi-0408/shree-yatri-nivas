@@ -79,19 +79,37 @@ export const DEFAULT_REVIEWS = [];
 export const DEFAULT_CUSTOMERS = [];
 
 export const PROPERTY_INFO = {
-  name: "SHREE YATRI NIVAS",
-  tagline: "Divine Comfort, Peaceful Lodging & Authentic Hospitality",
-  address: "Station Road, Near Central Temple Gate, Pandharpur, Maharashtra - 413304",
+  name: "HOTEL VIHANN INN",
+  tagline: "Comfort, Peaceful Lodging & Authentic Hospitality in Kolhapur",
+  address: "198, Kolhapur-Rukadi-Sangli Hwy, Tarabai Park, Kolhapur, Maharashtra 416003",
   phone: "+91 75177 68655",
   alt_phone: "+91 75177 68655",
   email: "admin@gmail.com",
   admin_email: "admin@gmail.com",
   whatsapp: "917517768655",
-  google_maps_url: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3801.378772392435!2d75.3262!3d17.6745!2m3!1f0!2f0!3f0!3m2!1i1024!2f768!4f13.1!3m3!1m2!1s0x3bc4181a94254841%3A0x2a0d1f7c70f0e0!2sPandharpur%2C%20Maharashtra!5e0!3m2!1sen!2sin!4v1695280000000!5m2!1sen!2sin",
-  check_in_time: "12:00 PM",
-  check_out_time: "11:00 AM",
+  google_maps_url: "https://maps.google.com/maps?q=198,+Kolhapur-Rukadi-Sangli+Hwy,+Tarabai+Park,+Kolhapur,+Maharashtra+416003&t=&z=15&ie=UTF8&iwloc=&output=embed",
+  check_in_time: "3:00 PM",
+  check_out_time: "10:00 AM",
+  proximity: [
+    { name: "Mahalaxmi Temple", distance: "4 km", time: "10-12 mins", category: "Temple & Spiritual" },
+    { name: "Airport", distance: "7 km", time: "15-20 mins", category: "Transit & Flights" },
+    { name: "Railway Station", distance: "1 km", time: "3-5 mins", category: "Transit & Trains" },
+    { name: "S.T. Stand", distance: "800 M", time: "2-3 mins", category: "Central Bus Stand" }
+  ],
+  rules: [
+    "Check In Time 3:00 pm",
+    "Check Out Time 10:00 am",
+    "Pets Are Not Allowed",
+    "Smoking Not Allowed",
+    "Govt. Id(s) Not Mandatory",
+    "Local Id(s) Allowed",
+    "Visitors Are Not Allowed",
+    "Outside Food And Beverage Not Allowed",
+    "Children Aged 0 to 4 Years Stay Free Of Charge",
+    "Children Aged 5 to 17 Years are Chargeable"
+  ],
   policies: {
-    child_policy: "Children below 4 years of age stay free of charge without extra bed. Additional charges apply for children aged 4 years and above.",
+    child_policy: "Children aged 0 to 4 years stay free of charge. Children aged 5 to 17 years are chargeable as extra guests.",
     payment_policy: "Payment Method: Pay at Property / Payment at Check-in. Cash and UPI/Cards accepted at front desk.",
     cancellation_policy: "Non-Refundable Policy: As per property policy, bookings are non-refundable once confirmed. Please contact the front desk for genuine emergency date modifications."
   }

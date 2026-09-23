@@ -51,7 +51,7 @@ export const AuthProvider = ({ children }) => {
               name: data.name || firebaseUser.displayName || 'Devotee',
               email: data.email || firebaseUser.email,
               mobile: data.mobile || firebaseUser.phoneNumber || '',
-              city: data.city || 'Pandharpur Devotee',
+              city: data.city || 'Kolhapur Guest',
               role: data.role || 'user',
               photoURL: firebaseUser.photoURL || null
             };
@@ -65,7 +65,7 @@ export const AuthProvider = ({ children }) => {
               name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Devotee',
               email: firebaseUser.email,
               mobile: firebaseUser.phoneNumber || '',
-              city: 'Pandharpur Devotee',
+              city: 'Kolhapur Guest',
               role: 'user',
               photoURL: firebaseUser.photoURL || null,
               created_at: new Date().toISOString()
@@ -128,7 +128,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const email = identifier.includes('@')
         ? identifier.trim().toLowerCase()
-        : `${identifier.trim().replace(/\D/g, '')}@shreeyatrinivas.in`;
+        : `${identifier.trim().replace(/\D/g, '')}@hotelvihanninn.in`;
 
       const cred = await signInWithEmailAndPassword(auth, email, password);
       const user = cred.user;
@@ -149,7 +149,7 @@ export const AuthProvider = ({ children }) => {
         name: userProfile?.name || user.displayName || user.email.split('@')[0],
         email: user.email,
         mobile: userProfile?.mobile || '',
-        city: userProfile?.city || 'Pandharpur Devotee',
+        city: userProfile?.city || 'Kolhapur Guest',
         role: userProfile?.role || 'user'
       };
 
@@ -198,7 +198,7 @@ export const AuthProvider = ({ children }) => {
         name: formData.name.trim(),
         email: formData.email.trim().toLowerCase(),
         mobile: formData.mobile.trim(),
-        city: formData.city ? formData.city.trim() : 'Pandharpur Devotee',
+        city: formData.city ? formData.city.trim() : 'Kolhapur Guest',
         role: 'user',
         created_at: new Date().toISOString()
       };
@@ -254,7 +254,7 @@ export const AuthProvider = ({ children }) => {
             name: user.displayName || 'Devotee',
             email: user.email,
             mobile: user.phoneNumber || '',
-            city: 'Pandharpur Devotee',
+            city: 'Kolhapur Guest',
             role: 'user',
             photoURL: user.photoURL || null,
             created_at: new Date().toISOString()
@@ -271,7 +271,7 @@ export const AuthProvider = ({ children }) => {
         name: userProfile?.name || user.displayName || 'Devotee',
         email: user.email,
         mobile: userProfile?.mobile || '',
-        city: userProfile?.city || 'Pandharpur Devotee',
+        city: userProfile?.city || 'Kolhapur Guest',
         role: userProfile?.role || 'user',
         photoURL: user.photoURL || null
       };

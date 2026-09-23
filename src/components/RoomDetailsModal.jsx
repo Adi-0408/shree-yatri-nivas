@@ -167,12 +167,14 @@ export const RoomDetailsModal = ({ room, onClose }) => {
 
           {/* Policies Note */}
           <div style={{ backgroundColor: 'var(--gold-light)', border: '1px solid var(--gold-border)', borderRadius: 'var(--radius-md)', padding: '1rem', fontSize: '0.85rem', color: '#66420B' }}>
-            <div style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '0.25rem' }}>
-              <ShieldCheck size={16} /> Important House & Stay Policies
+            <div style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '0.4rem' }}>
+              <ShieldCheck size={16} /> Important House &amp; Stay Rules ({PROPERTY_INFO.name})
             </div>
-            <div>• Check-in: {PROPERTY_INFO.check_in_time} | Check-out: {PROPERTY_INFO.check_out_time}</div>
-            <div>• {PROPERTY_INFO.policies.child_policy}</div>
-            <div>• {PROPERTY_INFO.policies.payment_policy}</div>
+            <div>• <strong>Timings:</strong> Check-in: {PROPERTY_INFO.check_in_time} | Check-out: {PROPERTY_INFO.check_out_time}</div>
+            <div>• <strong>ID Policy:</strong> Local ID(s) Allowed • Govt. ID(s) Not Mandatory</div>
+            <div>• <strong>Restrictions:</strong> Pets Not Allowed • Smoking Not Allowed • Visitors Not Allowed • Outside Food &amp; Beverages Not Allowed</div>
+            <div>• <strong>Child Policy:</strong> Children aged 0 to 4 stay free • Children aged 5 to 17 are chargeable</div>
+            <div>• <strong>Payment:</strong> Pay at Property / Payment at Check-in (Cash / UPI)</div>
           </div>
         </div>
 
