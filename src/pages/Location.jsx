@@ -253,7 +253,7 @@ export const Location = () => {
                     <span>{copied ? "Copied!" : "Copy Address"}</span>
                   </button>
                   <a 
-                    href={PROPERTY_INFO.google_maps_url} 
+                    href={PROPERTY_INFO.google_maps_direct_url} 
                     target="_blank" 
                     rel="noopener noreferrer" 
                     className="btn btn-primary"

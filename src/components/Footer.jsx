@@ -74,7 +74,17 @@ export const Footer = () => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', fontSize: '0.9rem' }}>
               <div style={{ display: 'flex', gap: '0.65rem' }}>
                 <MapPin size={18} color="var(--gold)" style={{ flexShrink: 0, marginTop: '2px' }} />
-                <span>{PROPERTY_INFO.address}</span>
+                <a 
+                  href={PROPERTY_INFO.google_maps_direct_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ color: '#E2DCD5', textDecoration: 'none', transition: 'color var(--transition-fast)' }}
+                  onMouseEnter={(e) => e.currentTarget.style.color = 'var(--gold)'}
+                  onMouseLeave={(e) => e.currentTarget.style.color = '#E2DCD5'}
+                  title="View on Google Maps"
+                >
+                  {PROPERTY_INFO.address}
+                </a>
               </div>
               <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'center' }}>
                 <Phone size={18} color="var(--gold)" style={{ flexShrink: 0 }} />

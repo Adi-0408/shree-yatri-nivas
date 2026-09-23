@@ -91,7 +91,8 @@ export const PROPERTY_INFO = {
   email: "admin@gmail.com",
   admin_email: "admin@gmail.com",
   whatsapp: "917517768655",
-  google_maps_url: "https://maps.google.com/maps?q=198,+Kolhapur-Rukadi-Sangli+Hwy,+Tarabai+Park,+Kolhapur,+Maharashtra+416003&t=&z=15&ie=UTF8&iwloc=&output=embed",
+  google_maps_direct_url: "https://maps.app.goo.gl/tYGh4zDw8fpcFKcu6",
+  google_maps_url: "https://maps.google.com/maps?q=16.7069356,74.2488815&hl=en&z=17&output=embed",
   check_in_time: "3:00 PM",
   check_out_time: "10:00 AM",
   proximity: [

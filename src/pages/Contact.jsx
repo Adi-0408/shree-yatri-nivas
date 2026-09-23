@@ -13,7 +13,8 @@ import {
   CheckCircle2, 
   ShieldAlert,
   Car,
-  ChevronDown
+  ChevronDown,
+  ExternalLink
 } from 'lucide-react';
 import { CustomSelect } from '../components/CustomSelect';
 
@@ -222,9 +223,19 @@ export const Contact = () => {
                 <p style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '1rem' }}>
                   {PROPERTY_INFO.address}
                 </p>
-                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.25rem' }}>
                   <strong>Key Distances:</strong> Mahalaxmi Temple (4 km) • Airport (7 km) • Railway Station (1 km) • S.T. Stand (800 M)
                 </div>
+                <a 
+                  href={PROPERTY_INFO.google_maps_direct_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-secondary btn-sm"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', borderColor: 'var(--border-gold)', color: 'var(--primary)', fontWeight: 600 }}
+                >
+                  <ExternalLink size={14} />
+                  <span>Open in Google Maps</span>
+                </a>
               </div>
 
               {/* Embedded Map */}
