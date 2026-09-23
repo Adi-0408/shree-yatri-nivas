@@ -225,7 +225,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const capacity = parseInt(document.getElementById("edit-room-capacity").value, 10);
       const total_quantity = parseInt(document.getElementById("edit-room-quantity").value, 10);
       const desc = document.getElementById("edit-room-desc").value.trim();
-      const img = document.getElementById("edit-room-img").value.trim() || "https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1200&q=80";
+      const img = document.getElementById("edit-room-img").value.trim() || "/images/rooms/room-wide.jpg";
 
       const roomPayload = {
         room_id: id || undefined,

@@ -27,8 +27,11 @@ export const RoomCard = ({ room, onOpenDetails, searchDates }) => {
     navigate(`/booking?${params.toString()}`, { viewTransition: true });
   };
 
-  const defaultImg = "https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1200&q=80";
-  const imageSrc = room.images && room.images.length > 0 ? room.images[0] : defaultImg;
+  const defaultImg = "/images/rooms/room-wide.jpg";
+  const validImages = Array.isArray(room.images)
+    ? room.images.filter(img => typeof img === 'string' && !img.includes('unsplash.com'))
+    : [];
+  const imageSrc = validImages.length > 0 ? validImages[0] : defaultImg;
 
   return (
     <article className="room-card">

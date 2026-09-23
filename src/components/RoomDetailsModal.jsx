@@ -28,9 +28,16 @@ export const RoomDetailsModal = ({ room, onClose }) => {
 
   if (!room) return null;
 
-  const images = room.images && room.images.length > 0
-    ? room.images
-    : ["https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1200&q=80"];
+  const defaultRoomPhotos = [
+    "/images/rooms/room-wide.jpg",
+    "/images/rooms/room-bed-1.jpg",
+    "/images/rooms/room-tv-2.jpg",
+    "/images/rooms/room-bathroom.jpg"
+  ];
+
+  const rawImages = room.images && room.images.length > 0 ? room.images : [];
+  const validImages = rawImages.filter(img => typeof img === 'string' && !img.includes('unsplash.com'));
+  const images = validImages.length > 0 ? validImages : defaultRoomPhotos;
 
   const handleBookNow = () => {
     onClose();
@@ -70,10 +77,10 @@ export const RoomDetailsModal = ({ room, onClose }) => {
         {/* Body */}
         <div className="modal-body" style={{ maxHeight: '72vh', overflowY: 'auto' }}>
           {/* Gallery Carousel */}
-          <div style={{ position: 'relative', height: '300px', borderRadius: 'var(--radius-lg)', overflow: 'hidden', marginBottom: '1.5rem', backgroundColor: 'var(--bg-subtle)' }}>
+          <div style={{ position: 'relative', height: '320px', borderRadius: 'var(--radius-lg)', overflow: 'hidden', marginBottom: '0.75rem', backgroundColor: 'var(--bg-subtle)' }}>
             <img
               src={images[activeImgIndex]}
-              alt={room.room_name}
+              alt={`${room.room_name} - Photo ${activeImgIndex + 1}`}
               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             />
             {images.length > 1 && (
@@ -85,11 +92,16 @@ export const RoomDetailsModal = ({ room, onClose }) => {
                     left: '10px',
                     top: '50%',
                     transform: 'translateY(-50%)',
-                    background: 'rgba(0,0,0,0.5)',
+                    background: 'rgba(0,0,0,0.55)',
                     color: '#FFF',
                     borderRadius: '50%',
-                    padding: '8px',
-                    display: 'flex'
+                    width: '36px',
+                    height: '36px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: 'none',
+                    cursor: 'pointer'
                   }}
                   title="Previous image"
                 >
@@ -102,19 +114,64 @@ export const RoomDetailsModal = ({ room, onClose }) => {
                     right: '10px',
                     top: '50%',
                     transform: 'translateY(-50%)',
-                    background: 'rgba(0,0,0,0.5)',
+                    background: 'rgba(0,0,0,0.55)',
                     color: '#FFF',
                     borderRadius: '50%',
-                    padding: '8px',
-                    display: 'flex'
+                    width: '36px',
+                    height: '36px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: 'none',
+                    cursor: 'pointer'
                   }}
                   title="Next image"
                 >
                   <ChevronRight size={20} />
                 </button>
+                <div style={{
+                  position: 'absolute',
+                  bottom: '12px',
+                  right: '12px',
+                  backgroundColor: 'rgba(0,0,0,0.65)',
+                  color: '#fff',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  padding: '3px 8px',
+                  borderRadius: '12px'
+                }}>
+                  {activeImgIndex + 1} / {images.length}
+                </div>
               </>
             )}
           </div>
+
+          {/* Thumbnail strip */}
+          {images.length > 1 && (
+            <div style={{ display: 'grid', gridTemplateColumns: `repeat(${images.length}, 1fr)`, gap: '0.5rem', marginBottom: '1.5rem' }}>
+              {images.map((img, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => setActiveImgIndex(idx)}
+                  style={{
+                    height: '60px',
+                    borderRadius: 'var(--radius-md)',
+                    overflow: 'hidden',
+                    border: activeImgIndex === idx ? '2px solid var(--primary)' : '2px solid transparent',
+                    opacity: activeImgIndex === idx ? 1 : 0.65,
+                    cursor: 'pointer',
+                    padding: 0,
+                    backgroundColor: 'var(--bg-subtle)',
+                    transition: 'all 0.2s ease'
+                  }}
+                  title={`View photo ${idx + 1}`}
+                >
+                  <img src={img} alt={`Thumbnail ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* Quick Specifications */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.85rem', marginBottom: '1.5rem', backgroundColor: 'var(--bg-canvas)', padding: '1rem 1.25rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)' }}>

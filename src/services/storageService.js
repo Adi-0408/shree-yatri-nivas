@@ -26,6 +26,40 @@ function cleanForFirestore(obj) {
   return cleaned;
 }
 
+export const sanitizeRoomImages = (roomList) => {
+  const defaultAcImages = [
+    "/images/rooms/room-wide.jpg",
+    "/images/rooms/room-bed-1.jpg",
+    "/images/rooms/room-tv-2.jpg",
+    "/images/rooms/room-bathroom.jpg"
+  ];
+  const defaultNonAcImages = [
+    "/images/rooms/room-bed-1.jpg",
+    "/images/rooms/room-tv-2.jpg",
+    "/images/rooms/room-bathroom.jpg",
+    "/images/rooms/room-wide.jpg"
+  ];
+
+  if (!Array.isArray(roomList)) return roomList;
+
+  return roomList.map(room => {
+    if (!room) return room;
+    const isAc = room.ac_status === "AC" || (room.room_type && room.room_type.includes("AC") && !room.room_type.includes("Non-AC"));
+    const replacementImages = isAc ? defaultAcImages : defaultNonAcImages;
+
+    const hasUnsplash = Array.isArray(room.images) && room.images.some(img => typeof img === 'string' && img.includes('unsplash.com'));
+    const isEmpty = !Array.isArray(room.images) || room.images.length === 0;
+
+    if (hasUnsplash || isEmpty) {
+      return {
+        ...room,
+        images: replacementImages
+      };
+    }
+    return room;
+  });
+};
+
 const STORAGE_KEYS = {
   ROOMS: "syn_rooms_v1",
   BOOKINGS: "syn_bookings_v1",
@@ -103,6 +137,14 @@ export const StorageService = {
     const storedRooms = localStorage.getItem(STORAGE_KEYS.ROOMS);
     if (!storedRooms) {
       localStorage.setItem(STORAGE_KEYS.ROOMS, JSON.stringify(DEFAULT_ROOMS));
+    } else {
+      try {
+        const parsed = JSON.parse(storedRooms);
+        const sanitized = sanitizeRoomImages(parsed);
+        localStorage.setItem(STORAGE_KEYS.ROOMS, JSON.stringify(sanitized));
+      } catch {
+        localStorage.setItem(STORAGE_KEYS.ROOMS, JSON.stringify(DEFAULT_ROOMS));
+      }
     }
     if (!localStorage.getItem(STORAGE_KEYS.BOOKINGS)) {
       localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(DEFAULT_BOOKINGS));
@@ -184,8 +226,18 @@ export const StorageService = {
         if (!snapshot.empty) {
           const cloudRooms = [];
           snapshot.forEach(d => cloudRooms.push({ ...d.data(), room_id: d.id }));
-          localStorage.setItem(STORAGE_KEYS.ROOMS, JSON.stringify(cloudRooms));
-          window.dispatchEvent(new CustomEvent("syn_rooms_updated", { detail: cloudRooms }));
+          const sanitizedRooms = sanitizeRoomImages(cloudRooms);
+
+          // If any cloud room had legacy unsplash images, repair Firestore doc
+          sanitizedRooms.forEach((r, idx) => {
+            const original = cloudRooms[idx];
+            if (JSON.stringify(r.images) !== JSON.stringify(original?.images)) {
+              setDoc(doc(db, "rooms", r.room_id), cleanForFirestore(r), { merge: true }).catch(() => {});
+            }
+          });
+
+          localStorage.setItem(STORAGE_KEYS.ROOMS, JSON.stringify(sanitizedRooms));
+          window.dispatchEvent(new CustomEvent("syn_rooms_updated", { detail: sanitizedRooms }));
           window.dispatchEvent(new CustomEvent("syn_pricing_updated"));
         } else {
           // Auto-seed rooms to Firestore if empty
@@ -279,7 +331,8 @@ export const StorageService = {
   getRooms(includeInactive = false) {
     this.init();
     try {
-      const rooms = JSON.parse(localStorage.getItem(STORAGE_KEYS.ROOMS) || "[]");
+      const raw = localStorage.getItem(STORAGE_KEYS.ROOMS);
+      const rooms = raw ? sanitizeRoomImages(JSON.parse(raw)) : DEFAULT_ROOMS;
       return includeInactive ? rooms : rooms.filter(r => r.status === "active");
     } catch {
       return DEFAULT_ROOMS;
@@ -324,7 +377,12 @@ export const StorageService = {
         badge: "Popular Stay",
         rating: 4.8,
         reviews_count: 12,
-        images: ["https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1200&q=80"],
+        images: [
+          "/images/rooms/room-wide.jpg",
+          "/images/rooms/room-bed-1.jpg",
+          "/images/rooms/room-tv-2.jpg",
+          "/images/rooms/room-bathroom.jpg"
+        ],
         ...roomData,
         room_id: newId,
         price: parsedPrice,

@@ -40,12 +40,13 @@ export const DEFAULT_ROOMS = [
     badge: "Guest Favourite",
     rating: 4.9,
     reviews_count: 0,
-    description: "Serene, air-conditioned room crafted for couples and families visiting the holy shrine. Features a plush double bed, silent inverter AC, free high-speed Wi-Fi, and 24/7 hot water. Standard tariff covers up to 2 persons (max 4 with extra person charges).",
+    description: "Serene, air-conditioned room crafted for couples and families visiting Kolhapur. Features a plush double bed, silent inverter AC, free high-speed Wi-Fi, and 24/7 hot water. Standard tariff covers up to 2 persons (max 4 with extra person charges).",
     amenities: ["Inverter Air Conditioning", "Free High-Speed Wi-Fi", "Hot Water Geyser (24/7)", "LED Smart TV", "Room Service", "Daily Housekeeping", "Complimentary Water"],
     images: [
-      "https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1200&q=80",
-      "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80",
-      "https://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&fit=crop&w=1200&q=80"
+      "/images/rooms/room-wide.jpg",
+      "/images/rooms/room-bed-1.jpg",
+      "/images/rooms/room-tv-2.jpg",
+      "/images/rooms/room-bathroom.jpg"
     ]
   },
   {
@@ -62,11 +63,13 @@ export const DEFAULT_ROOMS = [
     badge: "Budget Friendly",
     rating: 4.7,
     reviews_count: 0,
-    description: "Peaceful, naturally ventilated room with high ceiling fan, comfortable double bed, and sparkling clean private bathroom. Ideal for budget-conscious pilgrims. Standard tariff covers up to 2 persons (max 4 with extra person charges).",
+    description: "Peaceful, naturally ventilated room with high ceiling fan, comfortable double bed, and sparkling clean private bathroom. Ideal for budget-conscious guests and families. Standard tariff covers up to 2 persons (max 4 with extra person charges).",
     amenities: ["High-speed Ceiling Fan", "Free Wi-Fi", "24/7 Hot Water", "Attached Bathroom", "Daily Housekeeping", "Filtered Drinking Water"],
     images: [
-      "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1200&q=80",
-      "https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?auto=format&fit=crop&w=1200&q=80"
+      "/images/rooms/room-bed-1.jpg",
+      "/images/rooms/room-tv-2.jpg",
+      "/images/rooms/room-bathroom.jpg",
+      "/images/rooms/room-wide.jpg"
     ]
   }
 ];
