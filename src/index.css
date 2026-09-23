@@ -594,18 +594,19 @@ h1, h2, h3, h4, h5, h6 {
 .syn-nav-links {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
+  gap: 1.15rem;
   list-style: none;
 }
 
 .syn-nav-link {
-  font-size: 0.92rem;
+  font-size: 0.88rem;
   font-weight: 600;
   color: var(--text-secondary);
   position: relative;
-  padding: 0.4rem 0.65rem;
+  padding: 0.35rem 0.55rem;
   border-radius: var(--radius-sm);
   transition: all var(--transition-fast);
+  white-space: nowrap;
 }
 
 .syn-nav-link:hover {
@@ -617,6 +618,16 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--primary);
   background-color: var(--primary-light);
   font-weight: 700;
+}
+
+@media (max-width: 1120px) and (min-width: 993px) {
+  .syn-nav-links {
+    gap: 0.65rem;
+  }
+  .syn-nav-link {
+    font-size: 0.82rem;
+    padding: 0.3rem 0.4rem;
+  }
 }
 
 .syn-nav-actions {

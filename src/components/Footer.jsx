@@ -47,8 +47,10 @@ export const Footer = () => {
               <li><Link to="/" viewTransition>Home Overview</Link></li>
               <li><Link to="/rooms" viewTransition>Rooms & Tariffs</Link></li>
               <li><Link to="/booking" viewTransition>Online Reservation</Link></li>
-              <li><Link to="/reviews" viewTransition>Guest Testimonials</Link></li>
-              <li><Link to="/contact" viewTransition>Directions & Contact</Link></li>
+              <li><Link to="/location" viewTransition>Location &amp; Proximity</Link></li>
+              <li><Link to="/rules" viewTransition>Property Rules</Link></li>
+              <li><Link to="/reviews" viewTransition>Guest Reviews</Link></li>
+              <li><Link to="/contact" viewTransition>Contact Front Desk</Link></li>
             </ul>
           </div>
 
@@ -58,10 +60,11 @@ export const Footer = () => {
             <ul className="footer-links" style={{ fontSize: '0.85rem' }}>
               <li><strong>Check-in:</strong> {PROPERTY_INFO.check_in_time}</li>
               <li><strong>Check-out:</strong> {PROPERTY_INFO.check_out_time}</li>
-              <li><strong>Kids under 4:</strong> Free of charge</li>
+              <li><strong>Kids 0–4 yrs:</strong> Free of charge</li>
+              <li><strong>Kids 5–17 yrs:</strong> Chargeable</li>
               <li><strong>Payment:</strong> Pay at property / UPI</li>
-              <li><strong>Front Desk:</strong> 24 Hours Open</li>
-              <li><strong>Temple Distance:</strong> 400m Walk</li>
+              <li><strong>Mahalaxmi Temple:</strong> 4 km</li>
+              <li><strong>S.T. Stand:</strong> 800 M</li>
             </ul>
           </div>
 

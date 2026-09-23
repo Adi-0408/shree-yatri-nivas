@@ -56,6 +56,16 @@ export const Navbar = () => {
             </NavLink>
           </li>
           <li>
+            <NavLink to="/location" viewTransition className={({ isActive }) => `syn-nav-link ${isActive ? 'active' : ''}`}>
+              Location
+            </NavLink>
+          </li>
+          <li>
+            <NavLink to="/rules" viewTransition className={({ isActive }) => `syn-nav-link ${isActive ? 'active' : ''}`}>
+              Rules
+            </NavLink>
+          </li>
+          <li>
             <NavLink to="/reviews" viewTransition className={({ isActive }) => `syn-nav-link ${isActive ? 'active' : ''}`}>
               Reviews
             </NavLink>
@@ -200,6 +210,22 @@ export const Navbar = () => {
             Book Now
           </NavLink>
           <NavLink
+            to="/location"
+            viewTransition
+            onClick={handleNavClick}
+            className={({ isActive }) => `syn-nav-link ${isActive ? 'active' : ''}`}
+          >
+            Location & Proximity
+          </NavLink>
+          <NavLink
+            to="/rules"
+            viewTransition
+            onClick={handleNavClick}
+            className={({ isActive }) => `syn-nav-link ${isActive ? 'active' : ''}`}
+          >
+            Property Rules
+          </NavLink>
+          <NavLink
             to="/reviews"
             viewTransition
             onClick={handleNavClick}
@@ -213,7 +239,7 @@ export const Navbar = () => {
             onClick={handleNavClick}
             className={({ isActive }) => `syn-nav-link ${isActive ? 'active' : ''}`}
           >
-            Contact & Location
+            Contact Front Desk
           </NavLink>
 
           <div style={{ paddingTop: '0.75rem', borderTop: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>

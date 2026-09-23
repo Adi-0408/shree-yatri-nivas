@@ -26,6 +26,7 @@ import {
   Bus,
   Navigation,
   FileText,
+  Compass,
   Check
 } from 'lucide-react';
 
@@ -330,6 +331,14 @@ export const Home = () => {
               </div>
             </div>
           </div>
+
+          <div style={{ textAlign: 'center', marginTop: '1.25rem' }}>
+            <Link to="/location" viewTransition className="btn btn-secondary btn-sm" style={{ gap: '8px' }}>
+              <Compass size={15} color="var(--primary)" />
+              <span>Explore Detailed Location &amp; Directions</span>
+              <ArrowRight size={15} />
+            </Link>
+          </div>
         </div>
       </section>
 
@@ -384,6 +393,13 @@ export const Home = () => {
                   </div>
                 ))}
               </div>
+            </div>
+            <div style={{ textAlign: 'center', marginTop: '1.25rem' }}>
+              <Link to="/rules" viewTransition className="btn btn-secondary btn-sm" style={{ gap: '8px' }}>
+                <FileText size={15} color="var(--primary)" />
+                <span>View Complete Property Policy &amp; FAQs</span>
+                <ArrowRight size={15} />
+              </Link>
             </div>
           </div>
         </div>
