@@ -179,33 +179,15 @@ export const StorageService = {
       onSnapshot(pricingRef, (docSnap) => {
         if (docSnap.exists()) {
           const cloudConfig = docSnap.data();
-          const localConfig = this.getPricingConfig();
-
-          // Intelligent merge: Ensure local date_range_rates are not erased if cloud had empty/missing array
-          const cloudRates = Array.isArray(cloudConfig.date_range_rates) ? cloudConfig.date_range_rates : [];
-          const localRates = Array.isArray(localConfig.date_range_rates) ? localConfig.date_range_rates : [];
-
-          let mergedRates = cloudRates;
-          if (cloudRates.length === 0 && localRates.length > 0) {
-            mergedRates = localRates;
-          } else if (localRates.length > 0 && cloudRates.length > 0) {
-            const rateMap = new Map();
-            localRates.forEach(r => { if (r && r.id) rateMap.set(r.id, r); });
-            cloudRates.forEach(r => { if (r && r.id) rateMap.set(r.id, r); });
-            mergedRates = Array.from(rateMap.values());
-            mergedRates.sort((a, b) => String(a.start_date).localeCompare(String(b.start_date)));
-          }
-
           const finalConfig = {
-            ...localConfig,
+            ...DEFAULT_PRICING_CONFIG,
             ...cloudConfig,
-            date_range_rates: mergedRates
+            base_rates: {
+              ...DEFAULT_PRICING_CONFIG.base_rates,
+              ...(cloudConfig.base_rates || {})
+            },
+            date_range_rates: Array.isArray(cloudConfig.date_range_rates) ? cloudConfig.date_range_rates : []
           };
-
-          // If cloud was missing date_range_rates, repair cloud in background
-          if (cloudRates.length !== mergedRates.length) {
-            setDoc(pricingRef, cleanForFirestore(finalConfig), { merge: true }).catch(() => {});
-          }
 
           localStorage.setItem(STORAGE_KEYS.PRICING_CONFIG, JSON.stringify(finalConfig));
           window.dispatchEvent(new CustomEvent("syn_pricing_updated", { detail: finalConfig }));
@@ -268,6 +250,9 @@ export const StorageService = {
           cloudBookings.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
           localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(cloudBookings));
           window.dispatchEvent(new CustomEvent("syn_bookings_updated", { detail: cloudBookings }));
+        } else {
+          localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify([]));
+          window.dispatchEvent(new CustomEvent("syn_bookings_updated", { detail: [] }));
         }
       }, (err) => {
         console.warn("Firestore bookings listener:", err.message);
@@ -321,6 +306,25 @@ export const StorageService = {
         }
       }, (err) => {
         console.warn("Firestore staff listener:", err.message);
+      });
+
+      // 7. Sync & listen to registered customers across devices
+      const customersRef = collection(db, "customers");
+      onSnapshot(customersRef, (snapshot) => {
+        if (!snapshot.empty) {
+          const cloudCusts = [];
+          snapshot.forEach(d => {
+            const data = { ...d.data(), id: d.id };
+            if (!this.isDemoRecord(data)) {
+              cloudCusts.push(data);
+            }
+          });
+          if (cloudCusts.length > 0) {
+            localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(cloudCusts));
+          }
+        }
+      }, (err) => {
+        console.warn("Firestore customers listener:", err.message);
       });
     } catch (err) {
       console.warn("Firestore initialization warning:", err.message);
@@ -583,8 +587,14 @@ export const StorageService = {
       number_of_nights: cost.numberOfNights || bookingData.number_of_nights,
       base_charges: cost.roomBaseCharge ?? bookingData.base_charges,
       extra_charges: cost.extraGuestCharge ?? bookingData.extra_charges,
-      total_amount: cost.totalAmount ?? bookingData.total_amount,
+      extra_adult_charges: cost.extraAdultCharge ?? 0,
+      extra_child_charges: cost.extraChildCharge ?? 0,
+      extra_adults: cost.extraAdults ?? 0,
+      extra_children: cost.extraChildren ?? 0,
+      extra_guests: cost.extraGuests ?? 0,
       extra_person_rate: cost.extraPersonRate ?? bookingData.extra_person_rate,
+      child_rate: cost.childRate ?? 700,
+      total_amount: cost.totalAmount ?? bookingData.total_amount,
       payment_method: bookingData.payment_method || "Pay at Property",
       payment_status: bookingData.payment_status || "Pending",
       booking_status: "Confirmed",
@@ -595,11 +605,15 @@ export const StorageService = {
     bookings.unshift(newBooking);
     localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(bookings));
 
-    // Persist booking to Cloud Firestore
+    // Persist booking to Cloud Firestore immediately
     if (db) {
       setDoc(doc(db, "bookings", newBooking.booking_id), cleanForFirestore(newBooking), { merge: true }).catch(err => {
         console.warn("Firestore createBooking error:", err.message);
       });
+    }
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("syn_bookings_updated", { detail: bookings }));
     }
 
     return newBooking;
@@ -613,14 +627,15 @@ export const StorageService = {
       b.updated_at = new Date().toISOString();
       localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(bookings));
 
-      // Update in Cloud Firestore
+      // Update in Cloud Firestore immediately using setDoc merge
       if (db) {
-        updateDoc(doc(db, "bookings", bookingId), {
-          booking_status: newStatus,
-          updated_at: b.updated_at
-        }).catch(err => {
+        setDoc(doc(db, "bookings", bookingId), cleanForFirestore(b), { merge: true }).catch(err => {
           console.warn("Firestore updateBookingStatus error:", err.message);
         });
+      }
+
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("syn_bookings_updated", { detail: bookings }));
       }
 
       return true;
@@ -636,14 +651,15 @@ export const StorageService = {
       b.updated_at = new Date().toISOString();
       localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(bookings));
 
-      // Update in Cloud Firestore
+      // Update in Cloud Firestore immediately using setDoc merge
       if (db) {
-        updateDoc(doc(db, "bookings", bookingId), {
-          payment_status: newPaymentStatus,
-          updated_at: b.updated_at
-        }).catch(err => {
+        setDoc(doc(db, "bookings", bookingId), cleanForFirestore(b), { merge: true }).catch(err => {
           console.warn("Firestore updatePaymentStatus error:", err.message);
         });
+      }
+
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("syn_bookings_updated", { detail: bookings }));
       }
 
       return true;
@@ -983,6 +999,13 @@ export const StorageService = {
     customers.push(newCustomer);
     localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(customers));
 
+    // Persist registered customer to Cloud Firestore
+    if (db) {
+      setDoc(doc(db, "customers", newCustomer.id), cleanForFirestore(newCustomer), { merge: true }).catch(err => {
+        console.warn("Firestore customerRegister error:", err.message);
+      });
+    }
+
     const sessionData = {
       id: newCustomer.id,
       name: newCustomer.name,
@@ -1094,6 +1117,7 @@ export const StorageService = {
     const acRate = Number(newConfig.base_rates?.AC);
     const nonAcRate = Number(newConfig.base_rates?.["Non-AC"]);
     const extraRate = Number(newConfig.extra_person_rate);
+    const childRate = Number(newConfig.child_rate ?? newConfig.extra_person_rate ?? 700);
     const childAgeLimit = Number(newConfig.child_age_free_limit);
     const acQty = Number(newConfig.inventory?.AC?.total_rooms);
     const nonAcQty = Number(newConfig.inventory?.["Non-AC"]?.total_rooms);
@@ -1106,6 +1130,9 @@ export const StorageService = {
     }
     if (isNaN(extraRate) || extraRate < 0) {
       throw new Error("Price must be greater than or equal to 0.");
+    }
+    if (isNaN(childRate) || childRate < 0) {
+      throw new Error("Child price must be greater than or equal to 0.");
     }
     if (isNaN(childAgeLimit) || childAgeLimit < 0) {
       throw new Error("Child age free limit must be greater than or equal to 0.");
@@ -1121,6 +1148,7 @@ export const StorageService = {
     if (current.base_rates?.AC !== acRate) changeDescriptions.push(`AC Rate: ₹${current.base_rates?.AC} → ₹${acRate}`);
     if (current.base_rates?.["Non-AC"] !== nonAcRate) changeDescriptions.push(`Non-AC Rate: ₹${current.base_rates?.["Non-AC"]} → ₹${nonAcRate}`);
     if (current.extra_person_rate !== extraRate) changeDescriptions.push(`Extra Person: ₹${current.extra_person_rate} → ₹${extraRate}`);
+    if (current.child_rate !== childRate) changeDescriptions.push(`Child Rate: ₹${current.child_rate ?? 700} → ₹${childRate}`);
     if (current.child_age_free_limit !== childAgeLimit) changeDescriptions.push(`Child Free Age: ${current.child_age_free_limit}y → ${childAgeLimit}y`);
     if (current.inventory?.AC?.total_rooms !== acQty) changeDescriptions.push(`AC Rooms: ${current.inventory?.AC?.total_rooms} → ${acQty}`);
     if (current.inventory?.["Non-AC"]?.total_rooms !== nonAcQty) changeDescriptions.push(`Non-AC Rooms: ${current.inventory?.["Non-AC"]?.total_rooms} → ${nonAcQty}`);
@@ -1142,6 +1170,7 @@ export const StorageService = {
         "Non-AC": nonAcRate
       },
       extra_person_rate: extraRate,
+      child_rate: childRate,
       child_age_free_limit: childAgeLimit,
       base_capacity_per_room: 2,
       max_capacity_per_room: 4,
@@ -1220,6 +1249,7 @@ export const StorageService = {
         "Non-AC": Math.round(Number(rateData.rates?.["Non-AC"] ?? rateData.non_ac_rate ?? config.base_rates?.["Non-AC"] ?? 1400))
       },
       extra_person_rate: Math.round(Number(rateData.extra_person_rate ?? config.extra_person_rate ?? 700)),
+      child_rate: Math.round(Number(rateData.child_rate ?? rateData.extra_person_rate ?? config.child_rate ?? 700)),
       created_at: rateData.created_at || new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
@@ -1244,7 +1274,7 @@ export const StorageService = {
           id: `LOG-${Date.now()}`,
           timestamp: new Date().toISOString(),
           modified_by: adminUser,
-          action: `Set date-range rate '${payload.name}' (${payload.start_date} to ${payload.end_date}): AC ₹${payload.rates.AC}, Non-AC ₹${payload.rates["Non-AC"]}`
+          action: `Set date-range rate '${payload.name}' (${payload.start_date} to ${payload.end_date}): AC ₹${payload.rates.AC}, Non-AC ₹${payload.rates["Non-AC"]}, Extra ₹${payload.extra_person_rate}, Child ₹${payload.child_rate}`
         },
         ...(config.audit_logs || [])
       ].slice(0, 50)
@@ -1369,6 +1399,7 @@ export const StorageService = {
     const resolvedAcStatus = room ? room.ac_status : (acStatus || "AC");
     const standardBaseRate = Math.round(room?.price ?? (config.base_rates?.[resolvedAcStatus] || (resolvedAcStatus === "Non-AC" ? 1400 : 2400)));
     const standardExtraPersonRate = Math.round(config.extra_person_rate ?? 700);
+    const standardChildRate = Math.round(config.child_rate ?? config.extra_person_rate ?? 700);
     const dateRangeRates = Array.isArray(config.date_range_rates) ? config.date_range_rates : [];
 
     // Occupancy rules
@@ -1379,13 +1410,20 @@ export const StorageService = {
     const totalGuests = parsedAdults + parsedKidsUnder4 + parsedKidsAbove4;
     const exceedsMaxCapacity = totalGuests > maxAllowedGuests;
 
-    // Chargeable guests: Adults + Children above 4 (Children 0-4 are free)
-    const chargeableGuests = parsedAdults + parsedKidsAbove4;
+    // Adults use up base included slots first, remaining base capacity can accommodate children (5-17)
     const includedGuests = baseCapacityPerRoom * parsedQty;
-    const extraGuests = Math.max(0, chargeableGuests - includedGuests);
+    const includedAdults = Math.min(parsedAdults, includedGuests);
+    const extraAdults = parsedAdults - includedAdults;
+    const remainingIncluded = includedGuests - includedAdults;
+    const includedChildren = Math.min(parsedKidsAbove4, remainingIncluded);
+    const extraChildren = parsedKidsAbove4 - includedChildren;
+    const extraGuests = extraAdults + extraChildren;
+    const chargeableGuests = parsedAdults + parsedKidsAbove4;
 
     // Night-by-night dynamic calculation supporting date-range overrides
     let roomBaseCharge = 0;
+    let extraAdultCharge = 0;
+    let extraChildCharge = 0;
     let extraGuestCharge = 0;
     const nightBreakdowns = [];
     let hasSpecialDateRate = false;
@@ -1411,6 +1449,7 @@ export const StorageService = {
 
         let nightRate = standardBaseRate;
         let nightExtraPersonRate = standardExtraPersonRate;
+        let nightChildRate = standardChildRate;
         let isOverride = false;
         let overrideName = null;
 
@@ -1426,21 +1465,34 @@ export const StorageService = {
             matchedOverride.rate ??
             matchedOverride.daily_rate;
 
-          if (typeof overrideRate === 'number' && overrideRate >= 0) {
-            nightRate = Math.round(overrideRate);
+          if (overrideRate !== undefined && !isNaN(Number(overrideRate))) {
+            nightRate = Math.round(Number(overrideRate));
             isOverride = true;
             hasSpecialDateRate = true;
             overrideName = matchedOverride.name || matchedOverride.title || "Seasonal Rate";
           }
-          if (typeof matchedOverride.extra_person_rate === 'number' && matchedOverride.extra_person_rate >= 0) {
-            nightExtraPersonRate = Math.round(matchedOverride.extra_person_rate);
+
+          const rawExtra = matchedOverride.extra_person_rate ?? matchedOverride.extraPersonRate ?? matchedOverride.extra_rate;
+          if (rawExtra !== undefined && !isNaN(Number(rawExtra))) {
+            nightExtraPersonRate = Math.round(Number(rawExtra));
+            hasSpecialDateRate = true;
+          }
+
+          const rawChild = matchedOverride.child_rate ?? matchedOverride.childRate ?? rawExtra;
+          if (rawChild !== undefined && !isNaN(Number(rawChild))) {
+            nightChildRate = Math.round(Number(rawChild));
+            hasSpecialDateRate = true;
           }
         }
 
         const nightRoomCost = Math.round(nightRate * parsedQty);
-        const nightExtraCost = Math.round(extraGuests * nightExtraPersonRate);
+        const nightAdultExtra = Math.round(extraAdults * nightExtraPersonRate);
+        const nightChildExtra = Math.round(extraChildren * nightChildRate);
+        const nightExtraCost = nightAdultExtra + nightChildExtra;
 
         roomBaseCharge += nightRoomCost;
+        extraAdultCharge += nightAdultExtra;
+        extraChildCharge += nightChildExtra;
         extraGuestCharge += nightExtraCost;
 
         nightBreakdowns.push({
@@ -1449,13 +1501,18 @@ export const StorageService = {
           isOverride,
           overrideName,
           extraPersonRate: nightExtraPersonRate,
+          childRate: nightChildRate,
           nightRoomCost,
+          nightAdultExtra,
+          nightChildExtra,
           nightExtraCost
         });
       }
     } else {
       roomBaseCharge = Math.round(standardBaseRate * parsedQty * nights);
-      extraGuestCharge = Math.round(extraGuests * standardExtraPersonRate * nights);
+      extraAdultCharge = Math.round(extraAdults * standardExtraPersonRate * nights);
+      extraChildCharge = Math.round(extraChildren * standardChildRate * nights);
+      extraGuestCharge = extraAdultCharge + extraChildCharge;
     }
 
     const totalAmount = Math.round(roomBaseCharge + extraGuestCharge);
@@ -1463,6 +1520,9 @@ export const StorageService = {
     const effectiveExtraPersonRate = (nightBreakdowns.length > 0 && hasSpecialDateRate)
       ? Math.round(nightBreakdowns.reduce((sum, n) => sum + n.extraPersonRate, 0) / nightBreakdowns.length)
       : standardExtraPersonRate;
+    const effectiveChildRate = (nightBreakdowns.length > 0 && hasSpecialDateRate)
+      ? Math.round(nightBreakdowns.reduce((sum, n) => sum + n.childRate, 0) / nightBreakdowns.length)
+      : standardChildRate;
 
     return {
       numberOfNights: nights,
@@ -1476,9 +1536,16 @@ export const StorageService = {
       childrenAges: Array.isArray(childrenAges) ? childrenAges : [],
       totalGuests,
       includedGuests,
+      includedAdults,
+      extraAdults,
+      includedChildren,
+      extraChildren,
       chargeableGuests,
       extraGuests,
       extraPersonRate: effectiveExtraPersonRate,
+      childRate: effectiveChildRate,
+      extraAdultCharge,
+      extraChildCharge,
       extraGuestCharge,
       totalAmount,
       maxAllowedGuests,

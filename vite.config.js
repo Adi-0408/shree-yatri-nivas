@@ -8,6 +8,7 @@ let serverPricingState = {
     "Non-AC": 1400
   },
   extra_person_rate: 700,
+  child_rate: 700,
   child_age_free_limit: 4,
   base_capacity_per_room: 2,
   max_capacity_per_room: 4,
@@ -69,6 +70,7 @@ function pricingApiPlugin() {
             const acRate = body.base_rates?.AC !== undefined ? Number(body.base_rates.AC) : serverPricingState.base_rates.AC;
             const nonAcRate = body.base_rates?.["Non-AC"] !== undefined ? Number(body.base_rates["Non-AC"]) : serverPricingState.base_rates["Non-AC"];
             const extraRate = body.extra_person_rate !== undefined ? Number(body.extra_person_rate) : serverPricingState.extra_person_rate;
+            const childRate = body.child_rate !== undefined ? Number(body.child_rate) : (body.extra_person_rate !== undefined ? Number(body.extra_person_rate) : (serverPricingState.child_rate || 700));
             const childLimit = body.child_age_free_limit !== undefined ? Number(body.child_age_free_limit) : serverPricingState.child_age_free_limit;
             const acQty = body.inventory?.AC?.total_rooms !== undefined ? Number(body.inventory.AC.total_rooms) : serverPricingState.inventory.AC.total_rooms;
             const nonAcQty = body.inventory?.["Non-AC"]?.total_rooms !== undefined ? Number(body.inventory["Non-AC"].total_rooms) : serverPricingState.inventory["Non-AC"].total_rooms;
@@ -79,6 +81,9 @@ function pricingApiPlugin() {
             }
             if (isNaN(extraRate) || extraRate < 0) {
               return sendJson(400, { success: false, error: 'Price must be greater than or equal to 0.' });
+            }
+            if (isNaN(childRate) || childRate < 0) {
+              return sendJson(400, { success: false, error: 'Child price must be greater than or equal to 0.' });
             }
             if (isNaN(childLimit) || childLimit < 0) {
               return sendJson(400, { success: false, error: 'Child age free limit must be greater than or equal to 0.' });
@@ -91,6 +96,7 @@ function pricingApiPlugin() {
             if (serverPricingState.base_rates.AC !== acRate) changeDescriptions.push(`AC Rate: ₹${serverPricingState.base_rates.AC} → ₹${acRate}`);
             if (serverPricingState.base_rates["Non-AC"] !== nonAcRate) changeDescriptions.push(`Non-AC Rate: ₹${serverPricingState.base_rates["Non-AC"]} → ₹${nonAcRate}`);
             if (serverPricingState.extra_person_rate !== extraRate) changeDescriptions.push(`Extra Person: ₹${serverPricingState.extra_person_rate} → ₹${extraRate}`);
+            if (serverPricingState.child_rate !== childRate) changeDescriptions.push(`Child Rate: ₹${serverPricingState.child_rate ?? 700} → ₹${childRate}`);
             if (serverPricingState.child_age_free_limit !== childLimit) changeDescriptions.push(`Child Free Age: ${serverPricingState.child_age_free_limit}y → ${childLimit}y`);
             if (serverPricingState.inventory.AC.total_rooms !== acQty) changeDescriptions.push(`AC Rooms: ${serverPricingState.inventory.AC.total_rooms} → ${acQty}`);
             if (serverPricingState.inventory["Non-AC"].total_rooms !== nonAcQty) changeDescriptions.push(`Non-AC Rooms: ${serverPricingState.inventory["Non-AC"].total_rooms} → ${nonAcQty}`);
@@ -109,6 +115,7 @@ function pricingApiPlugin() {
                 "Non-AC": nonAcRate
               },
               extra_person_rate: extraRate,
+              child_rate: childRate,
               child_age_free_limit: childLimit,
               inventory: {
                 AC: {
@@ -159,12 +166,13 @@ function pricingApiPlugin() {
             let nights = 1;
             if (checkIn && checkOut) {
               const diff = new Date(checkOut).getTime() - new Date(checkIn).getTime();
-              const calcDays = Math.ceil(diff / (1000 * 60 * 60 * 24));
+              const calcDays = Math.round(diff / (1000 * 60 * 60 * 24));
               nights = calcDays > 0 ? calcDays : 1;
             }
 
             const standardBaseRate = Math.round(serverPricingState.base_rates[acStatus] || (acStatus === 'Non-AC' ? 1400 : 2400));
             const standardExtraRate = Math.round(serverPricingState.extra_person_rate ?? 700);
+            const standardChildRate = Math.round(serverPricingState.child_rate ?? serverPricingState.extra_person_rate ?? 700);
             const dateRangeRates = serverPricingState.date_range_rates || [];
             const baseCapacityPerRoom = serverPricingState.base_capacity_per_room || 2;
             const maxCapacityPerRoom = serverPricingState.max_capacity_per_room || 4;
@@ -173,54 +181,115 @@ function pricingApiPlugin() {
             const totalGuests = parsedAdults + parsedKidsUnder4 + parsedKidsAbove4;
             const exceedsMaxCapacity = totalGuests > maxAllowedGuests;
 
-            const chargeableGuests = parsedAdults + parsedKidsAbove4;
+            // Adults use up base included slots first, remaining base capacity can accommodate children (5-17)
             const includedGuests = baseCapacityPerRoom * parsedQty;
-            const extraGuests = Math.max(0, chargeableGuests - includedGuests);
+            const includedAdults = Math.min(parsedAdults, includedGuests);
+            const extraAdults = parsedAdults - includedAdults;
+            const remainingIncluded = includedGuests - includedAdults;
+            const includedChildren = Math.min(parsedKidsAbove4, remainingIncluded);
+            const extraChildren = parsedKidsAbove4 - includedChildren;
+            const extraGuests = extraAdults + extraChildren;
+            const chargeableGuests = parsedAdults + parsedKidsAbove4;
 
             let roomBaseCharge = 0;
+            let extraAdultCharge = 0;
+            let extraChildCharge = 0;
             let extraGuestCharge = 0;
             const nightBreakdowns = [];
             let hasSpecialDateRate = false;
 
             if (checkIn && checkOut && nights > 0) {
-              const startMs = new Date(checkIn).getTime();
+              const parts = String(checkIn).split('T')[0].split('-').map(Number);
+              const ciY = parts[0] || new Date().getFullYear();
+              const ciM = parts[1] || 1;
+              const ciD = parts[2] || 1;
+
               for (let i = 0; i < nights; i++) {
-                const nightDate = new Date(startMs + i * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-                const match = dateRangeRates.find(dr => dr.start_date && dr.end_date && nightDate >= dr.start_date && nightDate <= dr.end_date);
+                const nightDateObj = new Date(Date.UTC(ciY, ciM - 1, ciD + i));
+                const nightDate = nightDateObj.toISOString().split('T')[0];
+                const match = dateRangeRates.find(dr => {
+                  if (!dr || !dr.start_date || !dr.end_date) return false;
+                  const s = String(dr.start_date).split('T')[0].trim();
+                  const e = String(dr.end_date).split('T')[0].trim();
+                  return nightDate >= s && nightDate <= e;
+                });
+
                 let nightRate = standardBaseRate;
                 let nightExtra = standardExtraRate;
+                let nightChild = standardChildRate;
                 let isOverride = false;
                 let overrideName = null;
 
                 if (match) {
-                  const overrideRate = match.rates?.[acStatus] ??
+                  const isAc = acStatus === 'AC' || (String(acStatus).toUpperCase().includes('AC') && !String(acStatus).toUpperCase().includes('NON'));
+                  const acKey = isAc ? 'AC' : 'Non-AC';
+
+                  const overrideRate = match.rates?.[acKey] ??
+                    match.rates?.[acStatus] ??
+                    (isAc ? (match.ac_rate ?? match.rates?.AC) : (match.non_ac_rate ?? match.rates?.["Non-AC"])) ??
                     match.rates?.all ??
                     match.override_rate ??
                     match.rate ??
                     match.daily_rate;
 
-                  if (typeof overrideRate === 'number' && overrideRate >= 0) {
-                    nightRate = Math.round(overrideRate);
+                  if (overrideRate !== undefined && !isNaN(Number(overrideRate))) {
+                    nightRate = Math.round(Number(overrideRate));
                     isOverride = true;
                     hasSpecialDateRate = true;
                     overrideName = match.name || match.title || 'Seasonal Rate';
                   }
-                  if (typeof match.extra_person_rate === 'number' && match.extra_person_rate >= 0) {
-                    nightExtra = Math.round(match.extra_person_rate);
+
+                  const rawExtra = match.extra_person_rate ?? match.extraPersonRate ?? match.extra_rate;
+                  if (rawExtra !== undefined && !isNaN(Number(rawExtra))) {
+                    nightExtra = Math.round(Number(rawExtra));
+                    hasSpecialDateRate = true;
+                  }
+
+                  const rawChild = match.child_rate ?? match.childRate ?? rawExtra;
+                  if (rawChild !== undefined && !isNaN(Number(rawChild))) {
+                    nightChild = Math.round(Number(rawChild));
+                    hasSpecialDateRate = true;
                   }
                 }
 
-                roomBaseCharge += Math.round(nightRate * parsedQty);
-                extraGuestCharge += Math.round(extraGuests * nightExtra);
-                nightBreakdowns.push({ date: nightDate, rate: nightRate, isOverride, overrideName });
+                const nightRoomCost = Math.round(nightRate * parsedQty);
+                const nightAdultExtra = Math.round(extraAdults * nightExtra);
+                const nightChildExtra = Math.round(extraChildren * nightChild);
+                const nightExtraCost = nightAdultExtra + nightChildExtra;
+
+                roomBaseCharge += nightRoomCost;
+                extraAdultCharge += nightAdultExtra;
+                extraChildCharge += nightChildExtra;
+                extraGuestCharge += nightExtraCost;
+
+                nightBreakdowns.push({
+                  date: nightDate,
+                  rate: nightRate,
+                  isOverride,
+                  overrideName,
+                  extraPersonRate: nightExtra,
+                  childRate: nightChild,
+                  nightRoomCost,
+                  nightAdultExtra,
+                  nightChildExtra,
+                  nightExtraCost
+                });
               }
             } else {
               roomBaseCharge = Math.round(standardBaseRate * parsedQty * nights);
-              extraGuestCharge = Math.round(extraGuests * standardExtraRate * nights);
+              extraAdultCharge = Math.round(extraAdults * standardExtraRate * nights);
+              extraChildCharge = Math.round(extraChildren * standardChildRate * nights);
+              extraGuestCharge = extraAdultCharge + extraChildCharge;
             }
 
             const totalAmount = Math.round(roomBaseCharge + extraGuestCharge);
             const baseRate = nights > 0 ? Math.round(roomBaseCharge / (parsedQty * nights)) : standardBaseRate;
+            const effectiveExtraPersonRate = (nightBreakdowns.length > 0 && hasSpecialDateRate)
+              ? Math.round(nightBreakdowns.reduce((sum, n) => sum + n.extraPersonRate, 0) / nightBreakdowns.length)
+              : standardExtraPersonRate;
+            const effectiveChildRate = (nightBreakdowns.length > 0 && hasSpecialDateRate)
+              ? Math.round(nightBreakdowns.reduce((sum, n) => sum + n.childRate, 0) / nightBreakdowns.length)
+              : standardChildRate;
 
             return sendJson(200, {
               success: true,
@@ -236,9 +305,16 @@ function pricingApiPlugin() {
                 childrenAges: Array.isArray(childrenAges) ? childrenAges : [],
                 totalGuests,
                 includedGuests,
+                includedAdults,
+                extraAdults,
+                includedChildren,
+                extraChildren,
                 chargeableGuests,
                 extraGuests,
-                extraPersonRate: standardExtraRate,
+                extraPersonRate: effectiveExtraPersonRate,
+                childRate: effectiveChildRate,
+                extraAdultCharge,
+                extraChildCharge,
                 extraGuestCharge,
                 totalAmount,
                 maxAllowedGuests,

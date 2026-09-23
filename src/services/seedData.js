@@ -12,6 +12,7 @@ export const DEFAULT_PRICING_CONFIG = {
     "Non-AC": 1400
   },
   extra_person_rate: 700,
+  child_rate: 700, // Children aged 5 to 17 years (0 to 4 are free)
   child_age_free_limit: 4, // 0 to 4 years free of charge
   base_capacity_per_room: 2, // Standard tariff covers up to 2 persons
   max_capacity_per_room: 4, // Maximum 4 persons per room

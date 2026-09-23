@@ -265,7 +265,12 @@ export const Booking = () => {
         total_guests: priceBreakdown.totalGuests,
         included_guests: priceBreakdown.includedGuests,
         extra_guests: priceBreakdown.extraGuests,
+        extra_adults: priceBreakdown.extraAdults || 0,
+        extra_children: priceBreakdown.extraChildren || 0,
         extra_person_rate: priceBreakdown.extraPersonRate,
+        child_rate: priceBreakdown.childRate,
+        extra_adult_charges: priceBreakdown.extraAdultCharge || 0,
+        extra_child_charges: priceBreakdown.extraChildCharge || 0,
         room_id: selectedRoom?.room_id || selectedRoomId,
         room_name: selectedRoom?.room_name || 'Accommodations',
         room_type: selectedRoom?.room_type || 'AC Room',
@@ -732,22 +737,50 @@ export const Booking = () => {
                       </div>
                     )}
 
-                    {/* Line 2: Extra Guest Charge */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem', fontSize: '0.9rem' }}>
-                      <div>
-                        <strong style={{ color: 'var(--text-main)' }}>Extra Guest Charge:</strong>
-                        <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-                          {priceBreakdown.extraGuests > 0 ? (
-                            `${priceBreakdown.extraGuests} extra person(s) × ₹${priceBreakdown.extraPersonRate} × ${priceBreakdown.numberOfNights} night(s)`
-                          ) : (
-                            `No extra guest charges (Chargeable guests: ${priceBreakdown.chargeableGuests} ≤ ${priceBreakdown.includedGuests} included)`
-                          )}
+                    {/* Line 2: Extra Adult Charges */}
+                    {priceBreakdown.extraAdults > 0 && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem', fontSize: '0.9rem' }}>
+                        <div>
+                          <strong style={{ color: 'var(--text-main)' }}>Extra Adult Charge:</strong>
+                          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                            {priceBreakdown.extraAdults} extra adult(s) × ₹{priceBreakdown.extraPersonRate} × {priceBreakdown.numberOfNights} night(s)
+                          </div>
                         </div>
+                        <span style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--primary)' }}>
+                          +₹{(priceBreakdown.extraAdultCharge || 0).toLocaleString('en-IN')}
+                        </span>
                       </div>
-                      <span style={{ fontWeight: 700, fontSize: '0.95rem', color: priceBreakdown.extraGuests > 0 ? 'var(--primary)' : 'var(--text-muted)' }}>
-                        {priceBreakdown.extraGuests > 0 ? `+₹${(priceBreakdown.extraGuestCharge || 0).toLocaleString('en-IN')}` : '₹0'}
-                      </span>
-                    </div>
+                    )}
+
+                    {/* Line 2b: Chargeable Children (5–17 yrs) Charges */}
+                    {priceBreakdown.extraChildren > 0 && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem', fontSize: '0.9rem' }}>
+                        <div>
+                          <strong style={{ color: 'var(--text-main)' }}>Child Charge (5–17 yrs):</strong>
+                          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                            {priceBreakdown.extraChildren} child(ren) (5–17y) × ₹{priceBreakdown.childRate} × {priceBreakdown.numberOfNights} night(s)
+                          </div>
+                        </div>
+                        <span style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--gold-hover, #B45309)' }}>
+                          +₹{(priceBreakdown.extraChildCharge || 0).toLocaleString('en-IN')}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Line 2c: If neither extra adults nor extra children */}
+                    {priceBreakdown.extraGuests === 0 && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem', fontSize: '0.9rem' }}>
+                        <div>
+                          <strong style={{ color: 'var(--text-main)' }}>Extra Guest Charges:</strong>
+                          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                            No extra guest charges (Included capacity covers up to {priceBreakdown.includedGuests} guests)
+                          </div>
+                        </div>
+                        <span style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-muted)' }}>
+                          ₹0
+                        </span>
+                      </div>
+                    )}
 
                     {/* Line 3: Children under 4 */}
                     {priceBreakdown.childrenUnder4 > 0 && (
@@ -989,10 +1022,16 @@ export const Booking = () => {
                     <span>Room Base Charges (Up to {priceBreakdown.includedGuests} guests){priceBreakdown.hasSpecialDateRate ? ' (Seasonal Override)' : ''}:</span>
                     <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>₹{(priceBreakdown.roomBaseCharge || 0).toLocaleString('en-IN')}</span>
                   </div>
-                  {priceBreakdown.extraGuests > 0 && (
+                  {priceBreakdown.extraAdults > 0 && (
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', color: 'var(--primary)' }}>
-                      <span>Extra Guest Charges ({priceBreakdown.extraGuests} extra × ₹{priceBreakdown.extraPersonRate} × {priceBreakdown.numberOfNights}n):</span>
-                      <span style={{ fontWeight: 700 }}>+₹{(priceBreakdown.extraGuestCharge || 0).toLocaleString('en-IN')}</span>
+                      <span>Extra Adult Charges ({priceBreakdown.extraAdults} extra × ₹{priceBreakdown.extraPersonRate} × {priceBreakdown.numberOfNights}n):</span>
+                      <span style={{ fontWeight: 700 }}>+₹{(priceBreakdown.extraAdultCharge || 0).toLocaleString('en-IN')}</span>
+                    </div>
+                  )}
+                  {priceBreakdown.extraChildren > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', color: 'var(--gold-hover, #B45309)' }}>
+                      <span>Child Charges (5–17 yrs: {priceBreakdown.extraChildren} child × ₹{priceBreakdown.childRate} × {priceBreakdown.numberOfNights}n):</span>
+                      <span style={{ fontWeight: 700 }}>+₹{(priceBreakdown.extraChildCharge || 0).toLocaleString('en-IN')}</span>
                     </div>
                   )}
                   {priceBreakdown.childrenUnder4 > 0 && (

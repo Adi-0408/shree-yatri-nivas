@@ -236,7 +236,8 @@ export const Admin = ({ initialTab }) => {
     end_date: '',
     ac_rate: 3200,
     non_ac_rate: 1800,
-    extra_person_rate: 850
+    extra_person_rate: 850,
+    child_rate: 500
   });
 
   const handleQuick15Days = () => {
@@ -269,7 +270,8 @@ export const Admin = ({ initialTab }) => {
           AC: parseFloat(dateRangeForm.ac_rate) || 2400,
           "Non-AC": parseFloat(dateRangeForm.non_ac_rate) || 1400
         },
-        extra_person_rate: parseFloat(dateRangeForm.extra_person_rate) || 700
+        extra_person_rate: parseFloat(dateRangeForm.extra_person_rate) || 700,
+        child_rate: parseFloat(dateRangeForm.child_rate) || parseFloat(dateRangeForm.extra_person_rate) || 700
       }, 'Admin');
       showSuccess(`Date-range rate rule '${dateRangeForm.name || 'Seasonal Rate'}' saved successfully!`);
       setDateRangeForm({
@@ -278,7 +280,8 @@ export const Admin = ({ initialTab }) => {
         end_date: '',
         ac_rate: pricingForm.base_rates?.AC || 2400,
         non_ac_rate: pricingForm.base_rates?.["Non-AC"] || 1400,
-        extra_person_rate: pricingForm.extra_person_rate || 700
+        extra_person_rate: pricingForm.extra_person_rate || 700,
+        child_rate: pricingForm.child_rate ?? pricingForm.extra_person_rate ?? 700
       });
       reloadData();
     } catch (err) {
@@ -587,12 +590,6 @@ export const Admin = ({ initialTab }) => {
               <span style={{ fontWeight: 800, fontSize: '1.05rem' }}>ADMIN PORTAL</span>
             </div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>Front Desk &amp; Tariffs</div>
-
-            {/* Cloud Firestore Live Status */}
-            <div className="admin-status-pill">
-              <span style={{ width: 7, height: 7, borderRadius: '50%', backgroundColor: '#15803D', display: 'inline-block' }} />
-              <span>Firebase: hotel-fad04 (Live)</span>
-            </div>
           </div>
 
           {/* Quick Actions Toolbar for Mobile View */}
@@ -670,10 +667,10 @@ export const Admin = ({ initialTab }) => {
             disabled={syncingCloud}
             className="btn btn-secondary btn-sm"
             style={{ width: '100%', justifyContent: 'flex-start' }}
-            title="Sync all local data to Cloud Firestore (hotel-fad04)"
+            title="Sync all data to Cloud Database"
           >
             <Cloud size={15} color="var(--primary)" />
-            <span>{syncingCloud ? 'Syncing to Cloud...' : 'Sync to Firestore'}</span>
+            <span>{syncingCloud ? 'Syncing...' : 'Sync Database'}</span>
           </button>
           <button
             onClick={logoutAdmin}
@@ -1188,6 +1185,25 @@ export const Admin = ({ initialTab }) => {
 
                     <div className="form-group">
                       <label className="form-label" style={{ justifyContent: 'space-between' }}>
+                        <span>Child Tariff (5–17 yrs) (₹/child/night)</span>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--gold)', fontWeight: 600 }}>Kids 5–17y</span>
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="50"
+                        required
+                        className="form-control"
+                        value={pricingForm.child_rate ?? pricingForm.extra_person_rate ?? 700}
+                        onChange={(e) => setPricingForm({
+                          ...pricingForm,
+                          child_rate: parseFloat(e.target.value) || 0
+                        })}
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label" style={{ justifyContent: 'space-between' }}>
                         <span>Child Free Age Limit (Years)</span>
                         <span style={{ fontSize: '0.75rem', color: 'var(--success)', fontWeight: 600 }}>Free of Charge</span>
                       </label>
@@ -1477,6 +1493,20 @@ export const Admin = ({ initialTab }) => {
                       onChange={(e) => setDateRangeForm({ ...dateRangeForm, extra_person_rate: e.target.value })}
                     />
                   </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Child Rate (5–17y) (₹/nt)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="50"
+                      required
+                      placeholder="e.g. 500"
+                      className="form-control"
+                      value={dateRangeForm.child_rate}
+                      onChange={(e) => setDateRangeForm({ ...dateRangeForm, child_rate: e.target.value })}
+                    />
+                  </div>
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
@@ -1497,6 +1527,7 @@ export const Admin = ({ initialTab }) => {
                         <th style={{ textAlign: 'right' }}>AC Tariff</th>
                         <th style={{ textAlign: 'right' }}>Non-AC Tariff</th>
                         <th style={{ textAlign: 'right' }}>Extra Person</th>
+                        <th style={{ textAlign: 'right' }}>Child (5–17y)</th>
                         <th>Actions</th>
                       </tr>
                     </thead>
@@ -1524,7 +1555,10 @@ export const Admin = ({ initialTab }) => {
                               ₹{(rule.rates?.["Non-AC"] || 0).toLocaleString('en-IN')}/nt
                             </td>
                             <td className="td-number" style={{ fontWeight: 600 }}>
-                              ₹{(rule.extra_person_rate || 700).toLocaleString('en-IN')}
+                              ₹{(rule.extra_person_rate ?? 700).toLocaleString('en-IN')}
+                            </td>
+                            <td className="td-number" style={{ fontWeight: 600, color: 'var(--gold)' }}>
+                              ₹{(rule.child_rate ?? rule.extra_person_rate ?? 700).toLocaleString('en-IN')}
                             </td>
                             <td>
                               <button
