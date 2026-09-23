@@ -112,10 +112,11 @@ export const Contact = () => {
                 href={`https://wa.me/${PROPERTY_INFO.whatsapp}?text=${encodeURIComponent('Namaste Shree Yatri Nivas! I would like to inquire about lodging.')}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                style={{ color: 'var(--success)', fontWeight: 700, fontSize: '1.05rem' }}
+                style={{ color: 'var(--success)', fontWeight: 700, fontSize: '1.05rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
               >
-                Chat on WhatsApp →
+                +91 75177 68655 →
               </a>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>Click to chat on WhatsApp</div>
             </div>
 
             <div style={{ backgroundColor: '#FFFFFF', borderRadius: 'var(--radius-lg)', padding: '1.75rem', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-xs)' }}>
