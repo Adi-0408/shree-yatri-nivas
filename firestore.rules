@@ -1,0 +1,214 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ==============================================================
+    // HELPER FUNCTIONS & AUTHENTICATION CHECKS
+    // ==============================================================
+    
+    // Check if the request is from an authenticated user
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Check if the authenticated user matches a given user ID
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Check if the user is an authorized Administrator or Staff
+    // Matches admin email list or role in Firestore users collection
+    function isStaffOrAdmin() {
+      return isAuthenticated() && (
+        request.auth.token.email in ['admin@gmail.com', 'admin@hotelvihanninn.in'] ||
+        (request.auth.token.keys().hasAll(['admin']) && request.auth.token.admin == true) ||
+        (
+          exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'staff']
+        )
+      );
+    }
+
+    // Validation helper for strings with size boundaries (prevents storage abuse / DoS)
+    function isValidString(val, minLen, maxLen) {
+      return val is string && val.size() >= minLen && val.size() <= maxLen;
+    }
+
+    // ==============================================================
+    // 1. ROOMS CATALOGUE (/rooms/{roomId})
+    // ==============================================================
+    match /rooms/{roomId} {
+      // Publicly readable for all visitors and devotees browsing hotel rooms
+      allow read: if true;
+
+      // Only authorized staff/admin can add or update room details
+      allow create, update: if isStaffOrAdmin() &&
+        isValidString(request.resource.data.room_name, 2, 100) &&
+        request.resource.data.price is number &&
+        request.resource.data.price >= 0;
+
+      // Only staff/admin can delete room categories
+      allow delete: if isStaffOrAdmin();
+    }
+
+    // ==============================================================
+    // 2. PRICING & TARIFF CONFIGURATION (/settings/pricing_config)
+    // ==============================================================
+    match /settings/pricing_config {
+      // Publicly readable so the booking engine can compute tariffs in real time
+      allow read: if true;
+
+      // Only staff/admin can modify base rates, extra guest surcharges, and inventory
+      allow write: if isStaffOrAdmin() &&
+        request.resource.data.base_rates.AC is number &&
+        request.resource.data.base_rates.AC >= 0 &&
+        request.resource.data.base_rates['Non-AC'] is number &&
+        request.resource.data.base_rates['Non-AC'] >= 0;
+    }
+
+    // ==============================================================
+    // 3. ADMIN SETTINGS & CREDENTIALS (/settings/admin_config)
+    // ==============================================================
+    match /settings/admin_config {
+      // STRICT: Sensitive credentials must NEVER be publicly readable
+      allow read, write: if isStaffOrAdmin();
+    }
+
+    // ==============================================================
+    // 4. STAFF ACCOUNTS DIRECTORY (/staff/{staffId})
+    // ==============================================================
+    match /staff/{staffId} {
+      // Internal staff directory - strictly private to administrators
+      allow read, write: if isStaffOrAdmin();
+    }
+
+    // ==============================================================
+    // 5. USER PROFILES (/users/{userId})
+    // ==============================================================
+    match /users/{userId} {
+      // Devotees can view their own profile; staff/admin can view any profile
+      allow read: if isOwner(userId) || isStaffOrAdmin();
+
+      // Users can create their own profile upon registration
+      // Role escalation prevention: normal users cannot assign themselves 'admin' role
+      allow create: if isOwner(userId) &&
+        isValidString(request.resource.data.name, 1, 100) &&
+        isValidString(request.resource.data.email, 3, 100) &&
+        (
+          !('role' in request.resource.data) ||
+          request.resource.data.role == 'user' ||
+          isStaffOrAdmin()
+        );
+
+      // Users can update their personal details (name, phone, city)
+      // Cannot self-escalate the 'role' field
+      allow update: if (
+        isOwner(userId) &&
+        isValidString(request.resource.data.name, 1, 100) &&
+        (
+          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']) ||
+          isStaffOrAdmin()
+        )
+      ) || isStaffOrAdmin();
+
+      allow delete: if isStaffOrAdmin();
+    }
+
+    // ==============================================================
+    // 6. CUSTOMERS DIRECTORY (/customers/{customerId})
+    // ==============================================================
+    match /customers/{customerId} {
+      allow read: if isStaffOrAdmin() || (isAuthenticated() && (resource.data.id == request.auth.uid || resource.data.uid == request.auth.uid));
+      allow create: if isAuthenticated() || isStaffOrAdmin();
+      allow update: if isStaffOrAdmin() || (isAuthenticated() && (resource.data.id == request.auth.uid || resource.data.uid == request.auth.uid));
+      allow delete: if isStaffOrAdmin();
+    }
+
+    // ==============================================================
+    // 7. BOOKINGS & RESERVATIONS (/bookings/{bookingId})
+    // ==============================================================
+    match /bookings/{bookingId} {
+      // Devotees can read their own bookings; staff/admin can read all bookings
+      allow read: if isStaffOrAdmin() || (
+        isAuthenticated() && (
+          resource.data.customer_id == request.auth.uid ||
+          resource.data.uid == request.auth.uid ||
+          resource.data.guest_email == request.auth.token.email ||
+          resource.data.email == request.auth.token.email
+        )
+      );
+
+      // Bookings can be created with strict data validation (protects against corrupted data)
+      allow create: if
+        isValidString(request.resource.data.booking_id, 3, 60) &&
+        isValidString(request.resource.data.guest_name, 2, 100) &&
+        isValidString(request.resource.data.mobile, 7, 20) &&
+        request.resource.data.total_amount is number &&
+        request.resource.data.total_amount >= 0 &&
+        (
+          (isAuthenticated() && (
+            request.resource.data.customer_id == request.auth.uid ||
+            request.resource.data.uid == request.auth.uid
+          )) ||
+          isStaffOrAdmin() ||
+          // Fallback to allow validated direct guest reservations
+          request.resource.data.booking_id.size() > 0
+        );
+
+      // Updates: Staff/Admin can manage booking status and payments.
+      // Devotees can only cancel their own booking (cannot alter price, room, or payment status).
+      allow update: if isStaffOrAdmin() || (
+        isAuthenticated() &&
+        (resource.data.customer_id == request.auth.uid || resource.data.uid == request.auth.uid) &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['booking_status', 'cancelled_at', 'cancellation_reason']) &&
+        request.resource.data.booking_status == 'cancelled'
+      );
+
+      // Only staff/admin can delete booking records
+      allow delete: if isStaffOrAdmin();
+    }
+
+    // ==============================================================
+    // 8. REVIEWS & RATINGS (/reviews/{reviewId})
+    // ==============================================================
+    match /reviews/{reviewId} {
+      // Public can only view approved reviews; staff/admin can view pending reviews
+      allow read: if resource.data.status == 'approved' || isStaffOrAdmin();
+
+      // Authenticated devotees can submit reviews with rating 1-5 and comment bounds
+      allow create: if isAuthenticated() &&
+        isValidString(request.resource.data.name, 2, 100) &&
+        request.resource.data.rating is number &&
+        request.resource.data.rating >= 1 &&
+        request.resource.data.rating <= 5 &&
+        isValidString(request.resource.data.comment, 5, 1000) &&
+        (request.resource.data.status == 'pending' || isStaffOrAdmin());
+
+      // Only staff/admin can approve, edit, or delete reviews
+      allow update, delete: if isStaffOrAdmin();
+    }
+
+    // ==============================================================
+    // 9. CONTACT INQUIRIES (/inquiries/{inquiryId})
+    // ==============================================================
+    match /inquiries/{inquiryId} {
+      // Anyone can submit an inquiry via the Contact form with length limits
+      allow create: if
+        isValidString(request.resource.data.name, 2, 100) &&
+        isValidString(request.resource.data.mobile, 7, 20) &&
+        isValidString(request.resource.data.message, 3, 2000);
+
+      // Contact inquiries contain devotee phone numbers and emails; readable ONLY by staff/admin
+      allow read, update, delete: if isStaffOrAdmin();
+    }
+
+    // ==============================================================
+    // 10. DEFAULT DENY
+    // ==============================================================
+    // Block all other unauthorized access by default
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

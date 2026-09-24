@@ -114,6 +114,14 @@ export const AuthProvider = ({ children }) => {
     const adminStaffCheck = StorageService.validateAdminOrStaffLogin(identifier, password);
     if (adminStaffCheck.success) {
       const user = adminStaffCheck.user;
+
+      // Also authenticate with Firebase Auth so Firestore security rules recognize the session
+      try {
+        await signInWithEmailAndPassword(auth, user.email, password);
+      } catch (authErr) {
+        console.warn('Firebase Auth admin sign-in notice:', authErr.code);
+      }
+
       StorageService.setCurrentCustomer(user);
       localStorage.setItem('syn_admin_auth_v1', 'true');
       setIsAdminLoggedIn(true);
